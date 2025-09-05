@@ -86,8 +86,13 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     const updatedFields = fields.map((field: FormField) =>
       field.id === fieldId ? { ...field, ...updates } : field
     );
-    form.setValue('fields', updatedFields);
-  }, [fields, form]);
+    form.setValue('fields', updatedFields, { shouldValidate: true, shouldDirty: true });
+    
+    // Update selected field if it's the one being edited
+    if (selectedField?.id === fieldId) {
+      setSelectedField({ ...selectedField, ...updates });
+    }
+  }, [fields, form, selectedField]);
 
   // Delete field
   const deleteField = useCallback((fieldId: string) => {

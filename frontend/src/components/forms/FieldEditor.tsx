@@ -84,9 +84,10 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
           </label>
           <input
             type="text"
-            value={field.label}
+            value={field.label || ''}
             onChange={(e) => onChange({ label: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+            key={`label-${field.id}`}
           />
         </div>
 
@@ -96,9 +97,10 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
           </label>
           <input
             type="text"
-            value={field.name}
+            value={field.name || ''}
             onChange={(e) => onChange({ name: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+            key={`name-${field.id}`}
           />
         </div>
 
@@ -112,6 +114,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             onChange={(e) => onChange({ placeholder: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
             placeholder="Enter placeholder text..."
+            key={`placeholder-${field.id}`}
           />
         </div>
 
@@ -125,6 +128,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
             rows={2}
             placeholder="Help text for this field..."
+            key={`description-${field.id}`}
           />
         </div>
 
