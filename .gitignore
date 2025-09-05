@@ -40,3 +40,6 @@ playwright-report/
 test-report.html
 **/coverage/
 **/.nyc_output/
+
+frontend/node_modules/
+tests/backend/venv/
