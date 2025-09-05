@@ -35,6 +35,9 @@ export interface Workflow {
   status?: 'draft' | 'active' | 'paused' | 'archived';
 }
 
+// Alias for compatibility
+export type WorkflowDefinition = Workflow;
+
 export interface WorkflowRun {
   id: string;
   workflowId: string;

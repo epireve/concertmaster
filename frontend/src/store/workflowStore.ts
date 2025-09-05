@@ -172,8 +172,13 @@ export const useWorkflowStore = create<WorkflowStore>()(
         },
         
         updateNodeConfig: (workflowId, nodeId, config) => {
+          const existingData = get().activeWorkflow?.nodes.find(n => n.id === nodeId)?.data;
           get().updateNode(workflowId, nodeId, {
-            data: { ...get().activeWorkflow?.nodes.find(n => n.id === nodeId)?.data, config },
+            data: { 
+              label: existingData?.label || 'Node',
+              ...existingData, 
+              config,
+            },
           });
         },
 
@@ -293,7 +298,7 @@ type FormStore = FormState & FormActions;
 export const useFormStore = create<FormStore>()(
   devtools(
     persist(
-      (set, get) => ({
+      (set) => ({
         // Initial State
         forms: [],
         activeForm: null,

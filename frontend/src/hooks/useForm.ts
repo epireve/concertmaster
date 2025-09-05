@@ -1,11 +1,11 @@
-import { useForm as useHookForm, UseFormProps, UseFormReturn } from 'react-hook-form';
+import { useForm as useHookForm, UseFormProps, UseFormReturn, Path } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 export interface UseFormOptions<T extends Record<string, any> = Record<string, any>> extends UseFormProps<T> {
-  schema?: yup.Schema<T>;
+  schema?: yup.ObjectSchema<T>;
   onSubmit?: (data: T) => Promise<void> | void;
   onSubmitSuccess?: (data: T) => void;
   onSubmitError?: (error: Error) => void;
@@ -56,7 +56,7 @@ export function useForm<T extends Record<string, any> = Record<string, any>>({
 }: UseFormOptions<T> = {}): UseFormEnhanced<T> {
   const hookForm = useHookForm<T>({
     ...useFormOptions,
-    resolver: schema ? yupResolver(schema) : undefined,
+    resolver: schema ? yupResolver(schema as any) : undefined,
     mode: useFormOptions.mode || 'onChange',
   });
   
@@ -183,7 +183,7 @@ export function useForm<T extends Record<string, any> = Record<string, any>>({
   }, [hookForm.formState.errors]);
   
   const setFieldValue = useCallback((fieldName: keyof T, value: any) => {
-    hookForm.setValue(fieldName as string, value, {
+    hookForm.setValue(fieldName as Path<T>, value, {
       shouldValidate: true,
       shouldDirty: true,
     });
@@ -193,7 +193,7 @@ export function useForm<T extends Record<string, any> = Record<string, any>>({
   }, [hookForm, scheduleAutoSave]);
   
   const validateField = useCallback(async (fieldName: keyof T): Promise<boolean> => {
-    return hookForm.trigger(fieldName as string);
+    return hookForm.trigger(fieldName as Path<T>);
   }, [hookForm]);
   
   const validateForm = useCallback(async (): Promise<boolean> => {
@@ -203,7 +203,7 @@ export function useForm<T extends Record<string, any> = Record<string, any>>({
   // Watch for form changes to trigger auto-save
   const watchedValues = hookForm.watch();
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialValues.current && enableAutoSave) {
       const hasChanged = JSON.stringify(watchedValues) !== JSON.stringify(initialValues.current);
       setFormState(prev => ({ ...prev, hasUnsavedChanges: hasChanged }));
@@ -215,14 +215,14 @@ export function useForm<T extends Record<string, any> = Record<string, any>>({
   }, [watchedValues, enableAutoSave, scheduleAutoSave]);
   
   // Validate on mount if requested
-  React.useEffect(() => {
+  useEffect(() => {
     if (validateOnMount) {
       hookForm.trigger();
     }
   }, [validateOnMount, hookForm]);
   
   // Cleanup timeouts on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
@@ -252,21 +252,23 @@ export function useForm<T extends Record<string, any> = Record<string, any>>({
   };
 }
 
+// Export the type for external use
+export type { UseFormEnhanced };
+
 // Hook for form field validation
 export function useFieldValidation<T extends Record<string, any>>(
-  fieldName: keyof T,
-  schema?: yup.Schema
+  _schema?: yup.ObjectSchema<T>
 ) {
   const [error, setError] = useState<string | undefined>();
   const [isValidating, setIsValidating] = useState(false);
   
   const validate = useCallback(async (value: any): Promise<boolean> => {
-    if (!schema) return true;
+    if (!_schema) return true;
     
     setIsValidating(true);
     
     try {
-      await schema.validate(value);
+      await _schema.validate(value);
       setError(undefined);
       setIsValidating(false);
       return true;
@@ -279,7 +281,7 @@ export function useFieldValidation<T extends Record<string, any>>(
       setIsValidating(false);
       return false;
     }
-  }, [schema]);
+  }, [_schema]);
   
   return {
     error,
@@ -310,7 +312,7 @@ export function useFormPersistence<T extends Record<string, any>>(
   const debounceRef = useRef<NodeJS.Timeout>();
   
   // Load persisted data on mount
-  React.useEffect(() => {
+  useEffect(() => {
     if (!enabled) return;
     
     try {
@@ -327,7 +329,7 @@ export function useFormPersistence<T extends Record<string, any>>(
   // Save form data on changes
   const formValues = form.watch();
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (!enabled) return;
     
     if (debounceRef.current) {
@@ -353,7 +355,7 @@ export function useFormPersistence<T extends Record<string, any>>(
   }, [storageKey, storage]);
   
   // Cleanup on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);

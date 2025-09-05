@@ -152,7 +152,7 @@ export const useFormBuilder = (options: UseFormBuilderOptions = {}) => {
     updateConfig(prev => ({
       ...prev,
       fields: prev.fields?.map(field => 
-        field.id === fieldId ? { ...field, ...updates } : field
+        field.id === fieldId ? { ...field, ...updates } as FieldConfig : field
       ) || [],
     }));
   }, [updateConfig]);
