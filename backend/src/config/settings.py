@@ -3,7 +3,7 @@ ConcertMaster Configuration Management
 Environment-based configuration with validation
 """
 
-from pydantic import validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 from typing import List, Optional, Dict, Any
 import os
@@ -65,37 +65,26 @@ class Settings(BaseSettings):
     AUDIT_ENABLED: bool = True
     PERFORMANCE_MONITORING: bool = True
     
-    @validator("ALLOWED_ORIGINS", pre=True)
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
     def parse_origins(cls, v):
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",")]
         return v
     
-    @validator("DATABASE_URL")
+    @field_validator("DATABASE_URL")
+    @classmethod
     def validate_database_url(cls, v):
         if not v:
             raise ValueError("DATABASE_URL is required")
         return v
     
-    @validator("SECRET_KEY")
+    @field_validator("SECRET_KEY")
+    @classmethod 
     def validate_secret_key(cls, v):
         if not v or len(v) < 32:
             raise ValueError("SECRET_KEY must be at least 32 characters long")
         return v
-    
-    @validator("ASYNC_DATABASE_URL", always=True)
-    def set_async_database_url(cls, v: str, values: Dict[str, Any]) -> str:
-        """Auto-generate async database URL from sync URL if not provided"""
-        if v:
-            return v
-        
-        sync_url = values.get("DATABASE_URL", "")
-        if sync_url.startswith("postgresql://"):
-            return sync_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-        elif sync_url.startswith("postgres://"):
-            return sync_url.replace("postgres://", "postgresql+asyncpg://", 1)
-        
-        return sync_url
     
     @property
     def upload_path(self) -> Path:

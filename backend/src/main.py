@@ -79,9 +79,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Custom middleware
+# Security middleware
+from .middleware.security_middleware import (
+    SecurityHeadersMiddleware,
+    RateLimitingMiddleware as EnhancedRateLimitingMiddleware,
+    RequestValidationMiddleware,
+    AuditLoggingMiddleware,
+    SecurityEventMiddleware
+)
+from .services.security_manager import SecurityManager
+
+# Initialize security manager
+security_manager = SecurityManager(cache_manager)
+
+# Enhanced security middleware (order matters)
+app.add_middleware(SecurityEventMiddleware, security_logger=None)
+app.add_middleware(AuditLoggingMiddleware)
+app.add_middleware(RequestValidationMiddleware)
+app.add_middleware(EnhancedRateLimitingMiddleware, cache_manager=cache_manager)
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Legacy middleware (keep for compatibility)
 app.add_middleware(LoggingMiddleware)
-app.add_middleware(RateLimitingMiddleware)
 
 # Security scheme
 security = HTTPBearer()
