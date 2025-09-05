@@ -31,3 +31,12 @@ backend/src/__pycache__/
 backend/src/**/__pycache__/
 **/__pycache__/
 tests/node_modules/
+
+# Test artifacts and reports
+tests/test-report.xml
+tests/**/reports/
+tests/**/results/
+playwright-report/
+test-report.html
+**/coverage/
+**/.nyc_output/
