@@ -14,6 +14,10 @@ export interface FormField {
   order: number;
   section?: string;
   visibility?: FormVisibilityRule;
+  styling?: FieldStyling;
+  accessibility?: FieldAccessibility;
+  position?: { x: number; y: number };
+  updatedAt?: Date;
 }
 
 export type FormFieldType = 
@@ -50,6 +54,29 @@ export interface FormValidation {
   pattern?: string;
   custom?: string; // Custom validation function
   errorMessage?: string;
+  message?: string;
+  type?: string;
+  allowedTypes?: string[];
+  maxSize?: string;
+}
+
+export interface FieldStyling {
+  width?: string;
+  height?: string;
+  margin?: string;
+  padding?: string;
+  borderRadius?: string;
+  fontSize?: string;
+  fontWeight?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  textColor?: string;
+}
+
+export interface FieldAccessibility {
+  ariaLabel?: string;
+  description?: string;
+  required?: boolean;
 }
 
 export interface FormVisibilityRule {
@@ -67,6 +94,19 @@ export interface FormSection {
   collapsed?: boolean;
 }
 
+export interface FormLayout {
+  containerWidth?: string;
+  fieldSpacing?: 'compact' | 'normal' | 'comfortable' | 'large';
+  sectionSpacing?: 'compact' | 'normal' | 'comfortable' | 'large';
+  alignment?: 'left' | 'center' | 'right';
+  columns?: number;
+  responsive?: {
+    mobile?: { columns: number };
+    tablet?: { columns: number };
+    desktop?: { columns: number };
+  };
+}
+
 export interface FormSchema {
   id: string;
   name: string;
@@ -77,6 +117,7 @@ export interface FormSchema {
   sections: FormSection[];
   settings: FormSettings;
   styling: FormStyling;
+  layout?: FormLayout;
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
@@ -93,6 +134,9 @@ export interface FormSettings {
   submitButtonText: string;
   language: string;
   timezone: string;
+  theme?: string;
+  animations?: boolean;
+  responsiveDesign?: boolean;
 }
 
 export interface FormStyling {
@@ -102,6 +146,10 @@ export interface FormStyling {
   textColor: string;
   font: string;
   customCss?: string;
+  borderRadius?: string;
+  spacing?: 'compact' | 'normal' | 'comfortable' | 'large';
+  shadows?: boolean;
+  gradients?: boolean;
 }
 
 export interface FormResponse {

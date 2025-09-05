@@ -1,11 +1,12 @@
 import React from 'react';
 import { WorkflowCanvas } from './components/workflow/WorkflowCanvas';
 import { FormBuilder } from './components/forms/FormBuilder';
+import { VisualFormBuilder } from './components/visual-builder/VisualFormBuilder';
 import { useWorkflowStore, useFormStore } from './store/workflowStore';
 import { Button } from './components/shared';
 
 function App() {
-  const [currentView, setCurrentView] = React.useState<'workflow' | 'form'>('workflow');
+  const [currentView, setCurrentView] = React.useState<'workflow' | 'form' | 'visual-builder'>('workflow');
   const { createWorkflow, activeWorkflow } = useWorkflowStore();
   const { createForm, activeForm } = useFormStore();
 
@@ -81,6 +82,13 @@ function App() {
             >
               Form Builder
             </Button>
+            <Button
+              variant={currentView === 'visual-builder' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => setCurrentView('visual-builder')}
+            >
+              Visual Builder
+            </Button>
           </nav>
         </div>
       </header>
@@ -107,6 +115,20 @@ function App() {
             onPreview={(schema) => {
               console.log('Form preview:', schema);
               // Handle form preview
+            }}
+          />
+        )}
+
+        {currentView === 'visual-builder' && (
+          <VisualFormBuilder
+            initialSchema={activeForm || undefined}
+            onSave={(schema) => {
+              console.log('Visual form saved:', schema);
+              // Handle visual form save
+            }}
+            onPreview={(schema) => {
+              console.log('Visual form preview:', schema);
+              // Handle visual form preview
             }}
           />
         )}
