@@ -14,7 +14,7 @@ from typing import Dict, Any
 from .config import settings
 from .database.connection import DatabaseManager, get_db_session
 from .auth.security import SecurityManager, get_current_active_user
-from .api.routers import workflow_router, form_router, execution_router, node_router, integration_router
+from .api.routers import workflow_router, form_router, execution_router, node_router, integration_router, review_router
 from .services.worker_manager import WorkerManager
 from .services.cache_manager import CacheManager
 from .middleware.logging_middleware import LoggingMiddleware
@@ -138,6 +138,13 @@ app.include_router(
     integration_router,
     prefix="/api/v1/integrations",
     tags=["integrations"],
+    dependencies=[Depends(get_current_active_user)]
+)
+
+app.include_router(
+    review_router,
+    prefix="/api/v1/reviews",
+    tags=["reviews"],
     dependencies=[Depends(get_current_active_user)]
 )
 

@@ -15,6 +15,15 @@ from .workflow import (
     Integration
 )
 
+from .reviews import (
+    Review,
+    Rating,
+    Comment,
+    ReviewVote,
+    CommentVote,
+    ReviewSummary
+)
+
 __all__ = [
     "Base",
     "Workflow",
@@ -25,5 +34,11 @@ __all__ = [
     "FormSchema",
     "FormResponse",
     "WorkflowTemplate",
-    "Integration"
+    "Integration",
+    "Review",
+    "Rating", 
+    "Comment",
+    "ReviewVote",
+    "CommentVote",
+    "ReviewSummary"
 ]
