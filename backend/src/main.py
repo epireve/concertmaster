@@ -12,8 +12,8 @@ import logging
 from typing import Dict, Any
 
 from .config import settings
-from .database.connection import DatabaseManager
-from .auth.security import SecurityManager
+from .database.connection import DatabaseManager, get_db_session
+from .auth.security import SecurityManager, get_current_active_user
 from .api.routers import workflow_router, form_router, execution_router, node_router, integration_router
 from .services.worker_manager import WorkerManager
 from .services.cache_manager import CacheManager
@@ -32,6 +32,9 @@ db_manager = DatabaseManager()
 security_manager = SecurityManager()
 worker_manager = WorkerManager()
 cache_manager = CacheManager()
+
+# Set up manager dependencies
+security_manager.set_cache_manager(cache_manager)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -88,35 +91,35 @@ app.include_router(
     workflow_router,
     prefix="/api/v1/workflows",
     tags=["workflows"],
-    dependencies=[Depends(security_manager.get_current_user)]
+    dependencies=[Depends(get_current_active_user)]
 )
 
 app.include_router(
     form_router,
     prefix="/api/v1/forms",
     tags=["forms"],
-    dependencies=[Depends(security_manager.get_current_user)]
+    dependencies=[Depends(get_current_active_user)]
 )
 
 app.include_router(
     execution_router,
     prefix="/api/v1/executions",
     tags=["executions"],
-    dependencies=[Depends(security_manager.get_current_user)]
+    dependencies=[Depends(get_current_active_user)]
 )
 
 app.include_router(
     node_router,
     prefix="/api/v1/nodes",
     tags=["nodes"],
-    dependencies=[Depends(security_manager.get_current_user)]
+    dependencies=[Depends(get_current_active_user)]
 )
 
 app.include_router(
     integration_router,
     prefix="/api/v1/integrations",
     tags=["integrations"],
-    dependencies=[Depends(security_manager.get_current_user)]
+    dependencies=[Depends(get_current_active_user)]
 )
 
 # Health check endpoints
@@ -138,8 +141,7 @@ async def api_status() -> Dict[str, Any]:
         "api": "online",
         "database": await db_manager.get_stats(),
         "cache": await cache_manager.get_stats(),
-        "workers": await worker_manager.get_stats(),
-        "active_executions": await execution_router.get_active_count()
+        "workers": await worker_manager.get_stats()
     }
 
 if __name__ == "__main__":

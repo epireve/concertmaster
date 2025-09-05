@@ -3,8 +3,9 @@ ConcertMaster Configuration Management
 Environment-based configuration with validation
 """
 
-from pydantic import BaseSettings, validator
-from typing import List, Optional
+from pydantic import validator
+from pydantic_settings import BaseSettings
+from typing import List, Optional, Dict, Any
 import os
 from pathlib import Path
 
@@ -27,8 +28,9 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str
+    ASYNC_DATABASE_URL: str = ""
     DB_POOL_SIZE: int = 20
-    DB_MAX_OVERFLOW: int = 0
+    DB_MAX_OVERFLOW: int = 30
     DB_POOL_TIMEOUT: int = 30
     
     # Redis
@@ -80,6 +82,20 @@ class Settings(BaseSettings):
         if not v or len(v) < 32:
             raise ValueError("SECRET_KEY must be at least 32 characters long")
         return v
+    
+    @validator("ASYNC_DATABASE_URL", always=True)
+    def set_async_database_url(cls, v: str, values: Dict[str, Any]) -> str:
+        """Auto-generate async database URL from sync URL if not provided"""
+        if v:
+            return v
+        
+        sync_url = values.get("DATABASE_URL", "")
+        if sync_url.startswith("postgresql://"):
+            return sync_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif sync_url.startswith("postgres://"):
+            return sync_url.replace("postgres://", "postgresql+asyncpg://", 1)
+        
+        return sync_url
     
     @property
     def upload_path(self) -> Path:
