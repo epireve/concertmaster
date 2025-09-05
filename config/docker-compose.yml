@@ -1,0 +1,335 @@
+# ConcertMaster Docker Composition
+# Complete development and production environment setup
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: concertmaster-postgres
+    environment:
+      POSTGRES_DB: concertmaster
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-concertmaster_dev}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../database/schemas:/docker-entrypoint-initdb.d
+    networks:
+      - concertmaster-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache and Message Broker
+  redis:
+    image: redis:7-alpine
+    container_name: concertmaster-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - concertmaster-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+
+  # Backend API Server
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: ${BUILD_TARGET:-development}
+    container_name: concertmaster-backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-concertmaster_dev}@postgres:5432/concertmaster
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - SECRET_KEY=${SECRET_KEY:-dev_secret_key_change_in_production}
+      - DEBUG=${DEBUG:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://frontend:3000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/app
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - concertmaster-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Celery Worker
+  celery-worker:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: ${BUILD_TARGET:-development}
+    container_name: concertmaster-worker
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-concertmaster_dev}@postgres:5432/concertmaster
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - SECRET_KEY=${SECRET_KEY:-dev_secret_key_change_in_production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ../backend:/app
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - concertmaster-network
+    command: celery -A src.services.celery_worker worker --loglevel=info --concurrency=4
+    restart: unless-stopped
+
+  # Celery Beat (Scheduler)
+  celery-beat:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: ${BUILD_TARGET:-development}
+    container_name: concertmaster-scheduler
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-concertmaster_dev}@postgres:5432/concertmaster
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - SECRET_KEY=${SECRET_KEY:-dev_secret_key_change_in_production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ../backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - concertmaster-network
+    command: celery -A src.services.celery_worker beat --loglevel=info
+    restart: unless-stopped
+
+  # Celery Monitor (Flower)
+  flower:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: ${BUILD_TARGET:-development}
+    container_name: concertmaster-flower
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery-worker
+    networks:
+      - concertmaster-network
+    command: celery -A src.services.celery_worker flower --port=5555
+    restart: unless-stopped
+
+  # Frontend React Application
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      target: ${BUILD_TARGET:-development}
+    container_name: concertmaster-frontend
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000/api/v1
+      - REACT_APP_WS_URL=ws://localhost:8000/ws
+      - GENERATE_SOURCEMAP=${GENERATE_SOURCEMAP:-true}
+      - NODE_ENV=${NODE_ENV:-development}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - concertmaster-network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy (Production)
+  nginx:
+    image: nginx:alpine
+    container_name: concertmaster-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./ssl:/etc/nginx/ssl
+      - static_files:/var/www/static
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - concertmaster-network
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: concertmaster-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - concertmaster-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: concertmaster-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - concertmaster-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # ElasticSearch for Logging
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    container_name: concertmaster-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - concertmaster-network
+    restart: unless-stopped
+    profiles:
+      - logging
+
+  # Kibana Dashboard
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.0
+    container_name: concertmaster-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - concertmaster-network
+    restart: unless-stopped
+    profiles:
+      - logging
+
+  # Mailhog for Email Testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: concertmaster-mailhog
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web interface
+    networks:
+      - concertmaster-network
+    restart: unless-stopped
+    profiles:
+      - development
+
+# Networks
+networks:
+  concertmaster-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+
+# Volumes
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads_data:
+    driver: local
+  static_files:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+# Development overrides
+# Use: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+---
+# docker-compose.dev.yml (additional file for development)
+version: '3.8'
+services:
+  backend:
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ../backend:/app
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+  
+  frontend:
+    command: npm start
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000/api/v1
+      - GENERATE_SOURCEMAP=true
+  
+  celery-worker:
+    command: celery -A src.services.celery_worker worker --loglevel=debug --reload
+    volumes:
+      - ../backend:/app
