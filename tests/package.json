@@ -13,9 +13,13 @@
     "test:performance": "jest --testPathPattern=performance",
     "test:e2e": "playwright test",
     "test:all": "npm run test:unit && npm run test:integration && npm run test:performance",
+    "test:suite": "node scripts/run-test-suite.js",
+    "test:suite:quick": "node scripts/run-test-suite.js --no-e2e --no-performance",
     "coverage:report": "jest --coverage && open coverage/lcov-report/index.html",
+    "coverage:analyze": "node scripts/test-coverage-analysis.js",
     "lint:tests": "eslint . --ext .ts,.tsx",
-    "typecheck:tests": "tsc --noEmit"
+    "typecheck:tests": "tsc --noEmit",
+    "reports:generate": "npm run coverage:analyze && npm run test:suite"
   },
   "dependencies": {
     "@testing-library/jest-dom": "^6.1.4",
