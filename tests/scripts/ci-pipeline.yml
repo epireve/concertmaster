@@ -1,0 +1,732 @@
+# CI/CD Pipeline for Phase 4 Review System Testing
+# Comprehensive automated testing pipeline with quality gates and reporting
+
+name: Phase 4 Review System Tests
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run nightly tests at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+  PLAYWRIGHT_VERSION: '1.40.0'
+
+jobs:
+  # ====================
+  # SETUP AND VALIDATION
+  # ====================
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      should-test-frontend: ${{ steps.changes.outputs.frontend }}
+      should-test-backend: ${{ steps.changes.outputs.backend }}
+      should-run-e2e: ${{ steps.changes.outputs.e2e }}
+      should-run-security: ${{ steps.changes.outputs.security }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Detect Changes
+        id: changes
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - 'tests/frontend/**'
+              - 'tests/integration/**'
+            backend:
+              - 'backend/**'
+              - 'tests/backend/**'
+              - 'tests/unit/**'
+            e2e:
+              - 'tests/e2e/**'
+              - 'tests/performance/**'
+              - 'frontend/**'
+              - 'backend/**'
+            security:
+              - 'tests/security/**'
+              - 'backend/**'
+              - '**/*.py'
+              - '**/*.js'
+              - '**/*.ts'
+
+      - name: Cache Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/pip
+            node_modules
+            frontend/node_modules
+            tests/node_modules
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json', '**/requirements.txt') }}
+
+  # ====================
+  # UNIT TESTS
+  # ====================
+  unit-tests-backend:
+    needs: setup
+    if: needs.setup.outputs.should-test-backend == 'true'
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: concertmaster_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/requirements.txt
+          pip install coverage pytest-cov pytest-xdist
+      
+      - name: Set up Test Database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/concertmaster_test
+        run: |
+          python -m pytest tests/backend/conftest.py::setup_test_database
+      
+      - name: Run Backend Unit Tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/concertmaster_test
+          REDIS_URL: redis://localhost:6379
+          TESTING: true
+        run: |
+          coverage run -m pytest tests/backend/ tests/unit/backend/ \
+            --maxfail=5 \
+            --disable-warnings \
+            --junitxml=test-results/backend-unit.xml \
+            --cov-report=xml:coverage/backend-coverage.xml \
+            --cov-report=html:coverage/backend-html \
+            --cov=backend \
+            --cov-fail-under=90
+      
+      - name: Upload Backend Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: coverage/backend-coverage.xml
+          flags: backend,unit
+          name: backend-unit-coverage
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: backend-unit-test-results
+          path: |
+            test-results/backend-unit.xml
+            coverage/backend-html/
+
+  unit-tests-frontend:
+    needs: setup
+    if: needs.setup.outputs.should-test-frontend == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            tests/package-lock.json
+      
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend && npm ci
+          cd ../tests && npm ci
+      
+      - name: Run Frontend Unit Tests
+        run: |
+          cd tests
+          npm run test:unit -- \
+            --coverage \
+            --watchAll=false \
+            --reporters=default \
+            --reporters=jest-junit \
+            --testResultsProcessor=jest-sonar-reporter
+        env:
+          JEST_JUNIT_OUTPUT_DIR: ../test-results
+          JEST_JUNIT_OUTPUT_NAME: frontend-unit.xml
+      
+      - name: Upload Frontend Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: tests/reports/coverage/lcov.info
+          flags: frontend,unit
+          name: frontend-unit-coverage
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: frontend-unit-test-results
+          path: |
+            test-results/frontend-unit.xml
+            tests/reports/coverage/
+
+  # ====================
+  # INTEGRATION TESTS
+  # ====================
+  integration-tests:
+    needs: [setup, unit-tests-backend, unit-tests-frontend]
+    if: always() && (needs.setup.outputs.should-test-frontend == 'true' || needs.setup.outputs.should-test-backend == 'true')
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: concertmaster_integration
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Dependencies
+        run: |
+          cd frontend && npm ci
+          cd ../tests && npm ci
+          python -m pip install --upgrade pip
+          pip install -r tests/requirements.txt
+      
+      - name: Start Backend Service
+        run: |
+          cd backend
+          python -m uvicorn main:app --port 8000 &
+          sleep 10
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/concertmaster_integration
+          TESTING: true
+      
+      - name: Start Frontend Service
+        run: |
+          cd frontend
+          npm run build
+          npm run preview -- --port 3000 &
+          sleep 10
+        env:
+          VITE_API_BASE_URL: http://localhost:8000
+      
+      - name: Run Integration Tests
+        run: |
+          cd tests
+          npm run test:integration -- \
+            --maxWorkers=2 \
+            --coverage \
+            --testTimeout=60000 \
+            --reporters=default \
+            --reporters=jest-junit
+        env:
+          API_BASE_URL: http://localhost:8000
+          FRONTEND_BASE_URL: http://localhost:3000
+          JEST_JUNIT_OUTPUT_DIR: ../test-results
+          JEST_JUNIT_OUTPUT_NAME: integration.xml
+      
+      - name: Upload Integration Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: tests/reports/coverage/lcov.info
+          flags: integration
+          name: integration-coverage
+
+      - name: Archive Integration Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-results
+          path: test-results/integration.xml
+
+  # ====================
+  # END-TO-END TESTS
+  # ====================
+  e2e-tests:
+    needs: [setup, integration-tests]
+    if: always() && needs.setup.outputs.should-run-e2e == 'true'
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+        shard: [1, 2, 3, 4]
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: concertmaster_e2e
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install Dependencies
+        run: |
+          cd frontend && npm ci
+          cd ../tests && npm ci
+          python -m pip install --upgrade pip
+          pip install -r tests/requirements.txt
+      
+      - name: Install Playwright Browsers
+        run: |
+          cd tests
+          npx playwright install --with-deps ${{ matrix.browser }}
+      
+      - name: Start Services
+        run: |
+          # Start backend
+          cd backend
+          python -m uvicorn main:app --port 8000 &
+          
+          # Start frontend
+          cd ../frontend
+          npm run build
+          npm run preview -- --port 3000 &
+          
+          # Wait for services
+          sleep 15
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/concertmaster_e2e
+          TESTING: true
+          VITE_API_BASE_URL: http://localhost:8000
+      
+      - name: Run E2E Tests
+        run: |
+          cd tests
+          npx playwright test \
+            --project=${{ matrix.browser }} \
+            --shard=${{ matrix.shard }}/4 \
+            --reporter=html \
+            --reporter=junit
+        env:
+          BASE_URL: http://localhost:3000
+          API_BASE_URL: http://localhost:8000
+      
+      - name: Upload E2E Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-results-${{ matrix.browser }}-shard-${{ matrix.shard }}
+          path: |
+            tests/reports/playwright-html/
+            tests/reports/playwright-junit.xml
+            tests/reports/playwright-test-results/
+
+  # ====================
+  # PERFORMANCE TESTS
+  # ====================
+  performance-tests:
+    needs: [setup, e2e-tests]
+    if: always() && (github.event_name == 'schedule' || contains(github.event.head_commit.message, '[perf-test]'))
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Install Dependencies
+        run: |
+          cd tests && npm ci
+          npx playwright install chromium
+      
+      - name: Start Services
+        run: |
+          docker-compose -f tests/docker-compose.perf.yml up -d
+          sleep 30
+      
+      - name: Run Performance Tests
+        run: |
+          cd tests
+          npm run test:performance -- \
+            --project=chromium \
+            --reporter=json \
+            --output-dir=reports/performance
+        timeout-minutes: 30
+      
+      - name: Analyze Performance Results
+        run: |
+          cd tests
+          node scripts/analyze-performance.js reports/performance/results.json
+      
+      - name: Upload Performance Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-test-results
+          path: tests/reports/performance/
+
+  # ====================
+  # SECURITY TESTS
+  # ====================
+  security-tests:
+    needs: setup
+    if: needs.setup.outputs.should-run-security == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Install Dependencies
+        run: |
+          cd tests && npm ci
+          npm install -g retire
+          pip install safety bandit semgrep
+      
+      - name: Run Dependency Security Scan
+        run: |
+          # JavaScript dependencies
+          cd frontend && npm audit --audit-level=moderate
+          cd ../tests && retire --path=node_modules
+          
+          # Python dependencies
+          cd ../backend && safety check --short-report
+      
+      - name: Run Static Security Analysis
+        run: |
+          # Python security scan
+          bandit -r backend/ -f json -o security-report-python.json || true
+          
+          # JavaScript/TypeScript security scan
+          semgrep --config=auto frontend/ tests/ --json --output=security-report-js.json || true
+      
+      - name: Start Services for Security Testing
+        run: |
+          docker-compose -f tests/docker-compose.security.yml up -d
+          sleep 20
+      
+      - name: Run Security Tests
+        run: |
+          cd tests
+          npm run test:security -- \
+            --project=chromium \
+            --reporter=json \
+            --output-dir=reports/security
+        timeout-minutes: 20
+      
+      - name: Upload Security Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-test-results
+          path: |
+            security-report-*.json
+            tests/reports/security/
+
+  # ====================
+  # ACCESSIBILITY TESTS
+  # ====================
+  accessibility-tests:
+    needs: setup
+    if: needs.setup.outputs.should-test-frontend == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Install Dependencies
+        run: |
+          cd tests && npm ci
+          npx playwright install chromium
+      
+      - name: Start Frontend Service
+        run: |
+          cd frontend
+          npm ci && npm run build
+          npm run preview -- --port 3000 &
+          sleep 10
+      
+      - name: Run Accessibility Tests
+        run: |
+          cd tests
+          npm run test:accessibility -- \
+            --project=chromium \
+            --reporter=json
+      
+      - name: Upload Accessibility Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: accessibility-test-results
+          path: tests/reports/accessibility/
+
+  # ====================
+  # TEST REPORTING
+  # ====================
+  test-report:
+    needs: [unit-tests-backend, unit-tests-frontend, integration-tests, e2e-tests, security-tests, accessibility-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download All Test Results
+        uses: actions/download-artifact@v3
+        with:
+          path: all-test-results/
+      
+      - name: Generate Consolidated Report
+        run: |
+          cd tests
+          npm ci
+          node scripts/generate-test-report.js ../all-test-results/
+      
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Phase 4 Review System Test Results
+          path: |
+            all-test-results/**/*.xml
+            all-test-results/**/*junit*.xml
+          reporter: java-junit
+          fail-on-error: false
+      
+      - name: Upload Consolidated Report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: consolidated-test-report
+          path: tests/reports/consolidated/
+      
+      - name: Comment PR with Results
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'tests/reports/consolidated/summary.json';
+            
+            if (fs.existsSync(path)) {
+              const summary = JSON.parse(fs.readFileSync(path, 'utf8'));
+              
+              const body = `## 🧪 Test Results Summary
+              
+              | Test Suite | Status | Coverage | Duration |
+              |------------|--------|----------|----------|
+              | Unit Tests (Backend) | ${summary.backend?.status || 'N/A'} | ${summary.backend?.coverage || 'N/A'}% | ${summary.backend?.duration || 'N/A'} |
+              | Unit Tests (Frontend) | ${summary.frontend?.status || 'N/A'} | ${summary.frontend?.coverage || 'N/A'}% | ${summary.frontend?.duration || 'N/A'} |
+              | Integration Tests | ${summary.integration?.status || 'N/A'} | ${summary.integration?.coverage || 'N/A'}% | ${summary.integration?.duration || 'N/A'} |
+              | E2E Tests | ${summary.e2e?.status || 'N/A'} | - | ${summary.e2e?.duration || 'N/A'} |
+              | Security Tests | ${summary.security?.status || 'N/A'} | - | ${summary.security?.duration || 'N/A'} |
+              | Accessibility Tests | ${summary.accessibility?.status || 'N/A'} | - | ${summary.accessibility?.duration || 'N/A'} |
+              
+              **Overall Status:** ${summary.overall?.status || 'Unknown'}
+              **Total Coverage:** ${summary.overall?.coverage || 'N/A'}%
+              
+              [View detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }
+
+  # ====================
+  # QUALITY GATES
+  # ====================
+  quality-gate:
+    needs: [test-report]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download Test Report
+        uses: actions/download-artifact@v3
+        with:
+          name: consolidated-test-report
+          path: test-report/
+      
+      - name: Evaluate Quality Gates
+        run: |
+          node -e "
+            const fs = require('fs');
+            const summary = JSON.parse(fs.readFileSync('test-report/summary.json', 'utf8'));
+            
+            const requirements = {
+              backendCoverage: 90,
+              frontendCoverage: 85,
+              integrationCoverage: 80,
+              overallCoverage: 85,
+              securityTests: 'passed',
+              accessibilityTests: 'passed'
+            };
+            
+            let passed = true;
+            const failures = [];
+            
+            if (summary.backend?.coverage < requirements.backendCoverage) {
+              failures.push(\`Backend coverage: \${summary.backend.coverage}% < \${requirements.backendCoverage}%\`);
+              passed = false;
+            }
+            
+            if (summary.frontend?.coverage < requirements.frontendCoverage) {
+              failures.push(\`Frontend coverage: \${summary.frontend.coverage}% < \${requirements.frontendCoverage}%\`);
+              passed = false;
+            }
+            
+            if (summary.integration?.coverage < requirements.integrationCoverage) {
+              failures.push(\`Integration coverage: \${summary.integration.coverage}% < \${requirements.integrationCoverage}%\`);
+              passed = false;
+            }
+            
+            if (summary.overall?.coverage < requirements.overallCoverage) {
+              failures.push(\`Overall coverage: \${summary.overall.coverage}% < \${requirements.overallCoverage}%\`);
+              passed = false;
+            }
+            
+            if (summary.security?.status !== 'passed') {
+              failures.push('Security tests did not pass');
+              passed = false;
+            }
+            
+            if (summary.accessibility?.status !== 'passed') {
+              failures.push('Accessibility tests did not pass');
+              passed = false;
+            }
+            
+            if (!passed) {
+              console.log('❌ Quality Gate Failed:');
+              failures.forEach(f => console.log(\`  - \${f}\`));
+              process.exit(1);
+            } else {
+              console.log('✅ Quality Gate Passed: All requirements met');
+            }
+          "
+      
+      - name: Update Status Check
+        uses: actions/github-script@v6
+        if: always()
+        with:
+          script: |
+            const conclusion = process.env.QUALITY_GATE_STATUS === 'success' ? 'success' : 'failure';
+            
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Quality Gate',
+              head_sha: context.sha,
+              status: 'completed',
+              conclusion: conclusion,
+              output: {
+                title: conclusion === 'success' ? 'Quality standards met' : 'Quality standards not met',
+                summary: 'Check the test report for detailed information'
+              }
+            });
+
+# ====================
+# NOTIFICATIONS
+# ====================
+  notify-failure:
+    needs: [quality-gate]
+    if: failure()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Notify Team on Failure
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: '🚨 Phase 4 Review System tests failed on ${{ github.ref }}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  notify-success:
+    needs: [quality-gate]
+    if: success()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Notify Team on Success
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: '✅ Phase 4 Review System tests passed on ${{ github.ref }}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
