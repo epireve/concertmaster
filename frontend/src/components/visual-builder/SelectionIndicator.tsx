@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Move, MoreVertical } from 'lucide-react';
+import { Move, MoreVertical } from '../../utils/iconFallbacks';
 import { FormField } from '../../types/forms';
 
 interface SelectionIndicatorProps {

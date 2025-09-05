@@ -11,7 +11,8 @@ import { DropZone } from './DropZone';
 import { SelectionIndicator } from './SelectionIndicator';
 import { GridSystem } from './GridSystem';
 import { ResizeHandle } from './ResizeHandle';
-import { Plus, Move, Copy, Trash2, Settings, Eye, EyeOff } from 'lucide-react';
+import { Plus, Copy, Trash2, Settings, Eye, EyeOff } from 'lucide-react';
+import { Move } from '../../utils/iconFallbacks';
 
 interface VisualCanvasProps {
   fields: FormField[];

@@ -5,10 +5,11 @@
 
 import React from 'react';
 import { 
-  Eye, Code, Settings, Save, Play, ZoomIn, ZoomOut, 
-  Grid, Layers, Palette, Monitor, Tablet, Smartphone,
-  Undo, Redo, Download, Upload
+  Eye, Code, Settings, Save, Play, Plus, Minus, 
+  Grid3x3, Palette, Upload
 } from 'lucide-react';
+
+import { ZoomIn, ZoomOut, Layers, Monitor, Tablet, Smartphone, Undo2, Redo2, Download } from '../../utils/iconFallbacks';
 
 interface CanvasToolbarProps {
   viewMode: 'design' | 'preview' | 'code' | 'responsive';
@@ -232,7 +233,7 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
                 }`}
                 title="Toggle grid"
               >
-                <Grid className="w-4 h-4" />
+                <Grid3x3 className="w-4 h-4" />
               </button>
 
               <button

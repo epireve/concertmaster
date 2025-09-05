@@ -8,8 +8,10 @@ import { useDrag } from 'react-dnd';
 import { 
   Type, AlignLeft, Mail, Hash, ChevronDown, CheckSquare, Calendar,
   Upload, Link, Phone, DollarSign, Star, Grid3x3, PenTool, MapPin,
-  Search, Plus, Filter, Layers, Zap, Layout, Image, BarChart3
+  Plus, SlidersHorizontal, Image
 } from 'lucide-react';
+
+import { Search, Filter, Layers, Zap, Layout, BarChart3 } from '../../utils/iconFallbacks';
 import { FormFieldType } from '../../types/forms';
 
 interface ComponentDefinition {

@@ -6,9 +6,10 @@
 import React, { useState } from 'react';
 import { FormField } from '../../types/forms';
 import { 
-  Settings, Trash2, Copy, Eye, Type, Palette, Shield, 
-  Layout, Accessibility, ChevronDown, ChevronRight 
+  Settings, Trash2, Copy, Eye, Type, Palette, ChevronDown 
 } from 'lucide-react';
+
+import { Shield, Layout, Accessibility, ChevronRight } from '../../utils/iconFallbacks';
 
 interface PropertyPanelProps {
   selectedField: FormField | null;
