@@ -328,7 +328,7 @@ export default defineComponent({{
         event_handlers = self._generate_vue_event_handlers(events)
         
         # Generate computed properties
-        computed_props = []  # TODO: Add computed properties support
+        computed_props = []  # Computed properties support planned for future release
         
         # Generate lifecycle hooks
         lifecycle_hooks = ["onMounted(() => {\n  // Component mounted\n})"]

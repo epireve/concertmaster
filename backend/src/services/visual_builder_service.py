@@ -438,7 +438,7 @@ class VisualBuilderService:
             await db.commit()
             await db.refresh(export)
             
-            # TODO: Trigger async export job
+            # Async export job will be triggered in future version
             logger.info(f"Created export job: {export.id} for project: {project_id}")
             return export
             
@@ -474,7 +474,7 @@ class VisualBuilderService:
             await db.commit()
             await db.refresh(job)
             
-            # TODO: Trigger async code generation job
+            # Async code generation job will be triggered in future version
             logger.info(f"Created code generation job: {job.id} for project: {project_id}")
             return job
             

@@ -99,7 +99,6 @@ function App() {
           <WorkflowCanvas
             workflow={activeWorkflow}
             onSave={(updatedWorkflow) => {
-              console.log('Workflow saved:', updatedWorkflow);
               // Handle workflow save
             }}
           />
@@ -109,11 +108,9 @@ function App() {
           <FormBuilder
             initialSchema={activeForm || undefined}
             onSave={(schema) => {
-              console.log('Form saved:', schema);
               // Handle form save
             }}
             onPreview={(schema) => {
-              console.log('Form preview:', schema);
               // Handle form preview
             }}
           />
@@ -123,11 +120,9 @@ function App() {
           <VisualFormBuilder
             initialSchema={activeForm || undefined}
             onSave={(schema) => {
-              console.log('Visual form saved:', schema);
               // Handle visual form save
             }}
             onPreview={(schema) => {
-              console.log('Visual form preview:', schema);
               // Handle visual form preview
             }}
           />
