@@ -66,7 +66,7 @@ export const ExampleForm: React.FC = () => {
       </div>
 
       <Form 
-        form={form} 
+        form={form as any} 
         onSubmit={form.submitForm}
         layout="vertical"
         spacing="comfortable"
@@ -248,7 +248,7 @@ export const ExampleForm: React.FC = () => {
           <h3 className="text-lg font-semibold mb-2">Form State (Development)</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <strong>Is Valid:</strong> {form.isValid ? 'Yes' : 'No'}
+              <strong>Is Valid:</strong> {form.formState.isValid ? 'Yes' : 'No'}
             </div>
             <div>
               <strong>Is Dirty:</strong> {form.isDirty ? 'Yes' : 'No'}

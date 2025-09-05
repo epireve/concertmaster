@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { 
   FormBuilder, 
   DynamicForm, 
-  DynamicFormConfig, 
-  FieldConfig 
+  DynamicFormConfig
 } from '../shared';
 import { useFormBuilder } from '../../hooks/useFormBuilder';
 
@@ -261,8 +260,8 @@ export const FormBuilderExample: React.FC<FormBuilderExampleProps> = ({ classNam
     config,
     updateConfig,
     isDirty,
-    save,
-    reset,
+    save: _save,
+    reset: _reset,
     validation,
   } = useFormBuilder({
     initialConfig: EXAMPLE_FORMS[selectedExample],

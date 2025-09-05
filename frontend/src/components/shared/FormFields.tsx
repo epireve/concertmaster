@@ -26,6 +26,7 @@ interface ControlledInputProps<T extends FieldValues = FieldValues> extends Base
   fullWidth?: boolean;
   disabled?: boolean;
   className?: string;
+  required?: boolean;
 }
 
 export function ControlledInput<T extends FieldValues = FieldValues>({
@@ -70,6 +71,7 @@ interface ControlledSelectProps<T extends FieldValues = FieldValues> extends Bas
   loading?: boolean;
   clearable?: boolean;
   className?: string;
+  required?: boolean;
 }
 
 export function ControlledSelect<T extends FieldValues = FieldValues>({
@@ -124,6 +126,7 @@ interface ControlledTextareaProps<T extends FieldValues = FieldValues> extends B
   showCharacterCount?: boolean;
   maxLength?: number;
   className?: string;
+  required?: boolean;
 }
 
 export function ControlledTextarea<T extends FieldValues = FieldValues>({
@@ -165,6 +168,7 @@ interface ControlledCheckboxProps<T extends FieldValues = FieldValues> extends B
   disabled?: boolean;
   variant?: 'default' | 'switch';
   className?: string;
+  required?: boolean;
 }
 
 export function ControlledCheckbox<T extends FieldValues = FieldValues>({
@@ -213,6 +217,7 @@ interface ControlledRadioGroupProps<T extends FieldValues = FieldValues> extends
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   className?: string;
+  required?: boolean;
 }
 
 export function ControlledRadioGroup<T extends FieldValues = FieldValues>({

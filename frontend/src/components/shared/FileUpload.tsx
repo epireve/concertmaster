@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { clsx } from 'clsx';
-import { UploadIcon, XIcon, FileIcon, ImageIcon, CheckCircleIcon, AlertCircleIcon } from 'lucide-react';
+import { Upload, X, FileText, Image, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from './Button';
 
 export interface UploadFile {
@@ -47,7 +47,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const uploadId = `file-upload-${Math.random().toString(36).substr(2, 9)}`;
+  // Removed unused uploadId variable
 
   const validateFile = (file: File): string | null => {
     if (maxSize && file.size > maxSize) {
@@ -95,13 +95,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     if (onUpload) {
       for (const uploadFile of newUploadFiles) {
         if (uploadFile.status === 'pending') {
-          await uploadFile(uploadFile, updatedFiles);
+          await processUpload(uploadFile, updatedFiles);
         }
       }
     }
   }, [value, onChange, onUpload, maxFiles]);
 
-  const uploadFile = async (uploadFile: UploadFile, currentFiles: UploadFile[]) => {
+  const processUpload = async (uploadFile: UploadFile, currentFiles: UploadFile[]) => {
     const updateFileStatus = (updates: Partial<UploadFile>) => {
       const updated = currentFiles.map(f => 
         f.id === uploadFile.id ? { ...f, ...updates } : f
@@ -154,7 +154,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const retryUpload = async (fileId: string) => {
     const fileToRetry = value.find(f => f.id === fileId);
     if (fileToRetry && onUpload) {
-      await uploadFile(fileToRetry, value);
+      await processUpload(fileToRetry, value);
     }
   };
 
@@ -207,11 +207,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (file: File) => {
+  const getFile = (file: File) => {
     if (file.type.startsWith('image/')) {
-      return <ImageIcon className="w-5 h-5" />;
+      return <Image className="w-5 h-5" />;
     }
-    return <FileIcon className="w-5 h-5" />;
+    return <FileText className="w-5 h-5" />;
   };
 
   const canAddMore = value.length < maxFiles;
@@ -254,7 +254,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           }}
         >
           <div className="text-center">
-            <UploadIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <Upload className="mx-auto h-12 w-12 text-gray-400" />
             <div className="mt-2">
               <p className="text-sm text-gray-600">
                 Drop files here or{' '}
@@ -277,7 +277,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           variant="outline"
           onClick={openFileDialog}
           disabled={disabled}
-          leftIcon={<UploadIcon className="w-4 h-4" />}
+          leftIcon={<Upload className="w-4 h-4" />}
         >
           Choose Files
         </Button>
@@ -305,7 +305,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               onRemove={() => removeFile(uploadFile.id)}
               onRetry={() => retryUpload(uploadFile.id)}
               formatFileSize={formatFileSize}
-              getFileIcon={getFileIcon}
+              getFile={getFile}
             />
           ))}
         </div>
@@ -331,7 +331,7 @@ interface FileUploadItemProps {
   onRemove: () => void;
   onRetry: () => void;
   formatFileSize: (bytes: number) => string;
-  getFileIcon: (file: File) => React.ReactNode;
+  getFile: (file: File) => React.ReactNode;
 }
 
 const FileUploadItem: React.FC<FileUploadItemProps> = ({
@@ -339,14 +339,14 @@ const FileUploadItem: React.FC<FileUploadItemProps> = ({
   onRemove,
   onRetry,
   formatFileSize,
-  getFileIcon,
+  getFile,
 }) => {
   const { file, progress, status, error, url } = uploadFile;
 
   return (
     <div className="flex items-center p-3 border border-gray-200 rounded-lg">
       <div className="flex-shrink-0 text-gray-400">
-        {getFileIcon(file)}
+        {getFile(file)}
       </div>
       
       <div className="flex-1 ml-3 min-w-0">
@@ -356,17 +356,17 @@ const FileUploadItem: React.FC<FileUploadItemProps> = ({
           </p>
           <div className="flex items-center space-x-2">
             {status === 'success' && (
-              <CheckCircleIcon className="w-5 h-5 text-green-500" />
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
             )}
             {status === 'error' && (
-              <AlertCircleIcon className="w-5 h-5 text-red-500" />
+              <AlertCircle className="w-5 h-5 text-red-500" />
             )}
             <button
               onClick={onRemove}
               className="text-gray-400 hover:text-gray-600"
               aria-label="Remove file"
             >
-              <XIcon className="w-4 h-4" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>

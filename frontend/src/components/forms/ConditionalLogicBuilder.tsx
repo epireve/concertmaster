@@ -89,7 +89,7 @@ export const ConditionalLogicBuilder: React.FC<ConditionalLogicBuilderProps> = (
   };
 
   const getOperatorLabel = (operator: string) => {
-    const labels = {
+    const labels: Record<string, string> = {
       equals: 'equals',
       not_equals: 'does not equal',
       contains: 'contains',
@@ -100,7 +100,7 @@ export const ConditionalLogicBuilder: React.FC<ConditionalLogicBuilderProps> = (
   };
 
   const getActionLabel = (action: string) => {
-    const labels = {
+    const labels: Record<string, string> = {
       show: 'Show this field',
       hide: 'Hide this field',
       require: 'Make this field required',
@@ -271,7 +271,7 @@ export const EnhancedFieldEditor: React.FC<{
   onDelete: () => void;
   onDuplicate: () => void;
 }> = ({ field, fields, onChange, onDelete, onDuplicate }) => {
-  const handleFieldUpdate = useCallback((fieldId: string, updates: Partial<FormField>) => {
+  const handleFieldUpdate = useCallback((updates: Partial<FormField>) => {
     onChange({ ...field, ...updates });
   }, [field, onChange]);
 
@@ -286,7 +286,7 @@ export const EnhancedFieldEditor: React.FC<{
           <input
             type="text"
             value={field.label}
-            onChange={(e) => handleFieldUpdate(field.id, { label: e.target.value })}
+            onChange={(e) => handleFieldUpdate({ label: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -298,7 +298,7 @@ export const EnhancedFieldEditor: React.FC<{
           <input
             type="text"
             value={field.name}
-            onChange={(e) => handleFieldUpdate(field.id, { name: e.target.value })}
+            onChange={(e) => handleFieldUpdate({ name: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -309,7 +309,7 @@ export const EnhancedFieldEditor: React.FC<{
           </label>
           <textarea
             value={field.description || ''}
-            onChange={(e) => handleFieldUpdate(field.id, { description: e.target.value })}
+            onChange={(e) => handleFieldUpdate({ description: e.target.value })}
             rows={2}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
@@ -319,7 +319,7 @@ export const EnhancedFieldEditor: React.FC<{
           <input
             type="checkbox"
             checked={field.required}
-            onChange={(e) => handleFieldUpdate(field.id, { required: e.target.checked })}
+            onChange={(e) => handleFieldUpdate({ required: e.target.checked })}
             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
           <label className="ml-2 text-sm text-gray-700">Required field</label>
@@ -330,7 +330,7 @@ export const EnhancedFieldEditor: React.FC<{
       <ConditionalLogicBuilder
         fields={fields}
         selectedField={field}
-        onUpdateField={handleFieldUpdate}
+        onUpdateField={(_, updates) => handleFieldUpdate(updates)}
       />
 
       {/* Field Actions */}

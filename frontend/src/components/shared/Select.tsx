@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react';
 import { clsx } from 'clsx';
-import { ChevronDownIcon, CheckIcon } from 'lucide-react';
+import { ChevronDown as ChevronDownIcon, Check as CheckIcon } from 'lucide-react';
 
 export interface SelectOption {
   label: string;

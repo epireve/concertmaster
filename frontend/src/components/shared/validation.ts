@@ -262,11 +262,9 @@ export const validationUtils = {
     
   // Create dynamic validation based on other field
   dependsOn: <T>(fieldName: keyof T, dependentSchema: yup.Schema) =>
-    yup.mixed().when(fieldName as string, {
-      is: (value: any) => Boolean(value),
-      then: dependentSchema,
-      otherwise: (schema) => schema.optional()
-    }),
+    yup.mixed().when(fieldName as string, (value: any, schema: any) => 
+      Boolean(value) ? dependentSchema : schema.optional()
+    ),
     
   // Async validation with debouncing
   asyncValidation: (validatorFn: (value: any) => Promise<boolean>, errorMessage: string) => 

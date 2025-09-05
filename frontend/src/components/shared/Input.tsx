@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { clsx } from 'clsx';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -10,7 +10,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   fullWidth?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({
+export const Input = forwardRef<HTMLInputElement, InputProps>(({
   label,
   error,
   helpText,
@@ -20,7 +20,7 @@ export const Input: React.FC<InputProps> = ({
   className,
   id,
   ...props
-}) => {
+}, ref) => {
   const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
 
   return (
@@ -40,6 +40,7 @@ export const Input: React.FC<InputProps> = ({
         )}
         
         <input
+          ref={ref}
           id={inputId}
           className={clsx(
             'block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm transition-colors',
@@ -69,4 +70,6 @@ export const Input: React.FC<InputProps> = ({
       )}
     </div>
   );
-};
+});
+
+Input.displayName = 'Input';

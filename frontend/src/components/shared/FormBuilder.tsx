@@ -6,10 +6,7 @@ import {
   Trash2, 
   Copy, 
   Eye, 
-  EyeOff, 
-  ChevronUp, 
-  ChevronDown,
-  GripVertical,
+  EyeOff,
   Type,
   Hash,
   Mail,
@@ -21,10 +18,12 @@ import {
   List,
   Palette
 } from 'lucide-react';
+
+import { ChevronUp, ChevronDown, GripVertical } from '../../utils/iconFallbacks';
 import { clsx } from 'clsx';
 import { Button } from './Button';
 import { Input } from './Input';
-import { Select, SelectOption } from './Select';
+import { SelectOption } from './Select';
 import { Textarea } from './Textarea';
 import { Checkbox } from './Checkbox';
 import { Modal } from './Modal';
@@ -645,7 +644,7 @@ const FieldEditor: React.FC<FieldEditorProps> = ({ field, isOpen, onClose, onSav
   };
   
   const updateField = (updates: Partial<FieldConfig>) => {
-    setEditedField(prev => ({ ...prev, ...updates }));
+    setEditedField(prev => ({ ...prev, ...updates } as FieldConfig));
   };
   
   const fieldTypeConfig = FIELD_TYPES[field.type];

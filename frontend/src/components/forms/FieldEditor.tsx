@@ -1,5 +1,5 @@
 import React from 'react';
-import { FormField, FormFieldType, FormOption, FormValidation } from '../../types/forms';
+import { FormField, FormOption, FormValidation } from '../../types/forms';
 import { Trash2, Copy, Settings, Plus, Minus } from 'lucide-react';
 
 interface FieldEditorProps {

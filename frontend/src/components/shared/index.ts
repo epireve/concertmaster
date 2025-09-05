@@ -46,3 +46,7 @@ export type {
 
 // Export validation utilities
 export * from './validation';
+
+// Export components (single instance to avoid duplicates)
+export { LoadingSpinner } from './LoadingSpinner';
+export { ErrorBoundary } from './ErrorBoundary';

@@ -185,19 +185,13 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
     
     const processFields = (fields: FieldConfig[]) => {
       fields.forEach(field => {
-        let fieldSchema = yup.mixed();
-        
-        // Base validation
-        if (field.required) {
-          fieldSchema = fieldSchema.required(`${field.label || field.name} is required`);
-        } else {
-          fieldSchema = fieldSchema.optional();
-        }
+        let fieldSchema: any = yup.mixed();
         
         // Type-specific validation
         switch (field.type) {
           case 'text':
           case 'password':
+          case 'tel':
             fieldSchema = yup.string();
             if (field.validation?.minLength) {
               fieldSchema = fieldSchema.min(field.validation.minLength);
@@ -258,13 +252,14 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
             break;
         }
         
+        // Add required validation
+        if (field.required && field.type !== 'checkbox') {
+          fieldSchema = fieldSchema.required(`${field.label || field.name} is required`);
+        }
+        
         // Custom validation
         if (field.validation?.custom) {
           fieldSchema = fieldSchema.test('custom', 'Validation failed', field.validation.custom);
-        }
-        
-        if (field.required) {
-          fieldSchema = fieldSchema.required(`${field.label || field.name} is required`);
         }
         
         schemaFields[field.name] = fieldSchema;
@@ -291,13 +286,9 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
           config.validation === 'onBlur' ? 'onBlur' : 'onSubmit',
   });
   
-  const { watch, getValues } = form;
+  const { watch } = form;
   const watchedValues = watch();
   
-  // Handle field changes
-  const handleFieldChange = useCallback((fieldName: string, value: any) => {
-    config.onFieldChange?.(fieldName, value, getValues());
-  }, [config, getValues]);
   
   // Check if field should be visible based on conditional rules
   const isFieldVisible = useCallback((field: FieldConfig): boolean => {
@@ -460,13 +451,15 @@ export const DynamicForm: React.FC<DynamicFormProps> = ({
   }, [isFieldVisible]);
   
   // Handle form submission
-  const handleSubmit = form.handleSubmit(async (data) => {
+  const onSubmit = async (data: FieldValues) => {
     try {
       await config.onSubmit?.(data);
     } catch (error) {
       console.error('Form submission failed:', error);
     }
-  });
+  };
+  
+  const handleSubmit = form.handleSubmit(onSubmit);
   
   const gridColumns = config.layout === 'grid' ? config.columns || 2 : 1;
   const gridClass = config.layout === 'grid' 
@@ -552,7 +545,7 @@ export const useDynamicForm = (config: DynamicFormConfig, initialData?: FieldVal
           ...section,
           fields: section.fields.map(field => 
             field.id === fieldId ? { ...field, ...updates } : field
-          ),
+          ) as FieldConfig[],
         }));
       }
       
@@ -560,7 +553,7 @@ export const useDynamicForm = (config: DynamicFormConfig, initialData?: FieldVal
       if (newConfig.fields) {
         newConfig.fields = newConfig.fields.map(field => 
           field.id === fieldId ? { ...field, ...updates } : field
-        );
+        ) as FieldConfig[];
       }
       
       return newConfig;

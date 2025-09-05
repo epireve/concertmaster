@@ -1,12 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { useForm } from '@tanstack/react-form';
+import { useForm, Controller, UseFormReturn } from 'react-hook-form';
 import { 
   FormSchema, 
   FormField, 
   FormFieldType, 
   FormSection,
-  FormSettings,
-  FormStyling 
+ 
 } from '../../types/forms';
 import { FieldPalette } from './FieldPalette';
 import { FieldEditor } from './FieldEditor';
@@ -29,9 +28,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('builder');
   const [selectedField, setSelectedField] = useState<FormField | null>(null);
-  const [draggedField, setDraggedField] = useState<FormFieldType | null>(null);
+  const [, setDraggedField] = useState<FormFieldType | null>(null);
 
-  // Initialize form with TanStack Form
+  // Initialize form with react-hook-form
   const form = useForm<FormSchema>({
     defaultValues: initialSchema || {
       id: crypto.randomUUID(),
@@ -63,10 +62,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     },
   });
 
-  const { fields, sections } = form.useStore((state) => ({
-    fields: state.values.fields,
-    sections: state.values.sections,
-  }));
+  const watchedValues = form.watch();
+  const fields = watchedValues.fields || [];
+  const sections = watchedValues.sections || [];
 
   // Add field to form
   const addField = useCallback((fieldType: FormFieldType, sectionId?: string) => {
@@ -80,21 +78,21 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       section: sectionId,
     };
 
-    form.setFieldValue('fields', [...fields, newField]);
+    form.setValue('fields', [...fields, newField]);
   }, [fields, form]);
 
   // Update field
   const updateField = useCallback((fieldId: string, updates: Partial<FormField>) => {
-    const updatedFields = fields.map(field =>
+    const updatedFields = fields.map((field: FormField) =>
       field.id === fieldId ? { ...field, ...updates } : field
     );
-    form.setFieldValue('fields', updatedFields);
+    form.setValue('fields', updatedFields);
   }, [fields, form]);
 
   // Delete field
   const deleteField = useCallback((fieldId: string) => {
-    const updatedFields = fields.filter(field => field.id !== fieldId);
-    form.setFieldValue('fields', updatedFields);
+    const updatedFields = fields.filter((field: FormField) => field.id !== fieldId);
+    form.setValue('fields', updatedFields);
     if (selectedField?.id === fieldId) {
       setSelectedField(null);
     }
@@ -102,7 +100,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
 
   // Duplicate field
   const duplicateField = useCallback((fieldId: string) => {
-    const originalField = fields.find(field => field.id === fieldId);
+    const originalField = fields.find((field: FormField) => field.id === fieldId);
     if (!originalField) return;
 
     const duplicatedField: FormField = {
@@ -113,7 +111,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       order: fields.length,
     };
 
-    form.setFieldValue('fields', [...fields, duplicatedField]);
+    form.setValue('fields', [...fields, duplicatedField]);
   }, [fields, form]);
 
   // Reorder fields
@@ -123,12 +121,12 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     reorderedFields.splice(endIndex, 0, removed);
 
     // Update order values
-    const updatedFields = reorderedFields.map((field, index) => ({
+    const updatedFields = reorderedFields.map((field: FormField, index: number) => ({
       ...field,
       order: index,
     }));
 
-    form.setFieldValue('fields', updatedFields);
+    form.setValue('fields', updatedFields);
   }, [fields, form]);
 
   // Add section
@@ -139,7 +137,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
       order: sections.length,
     };
 
-    form.setFieldValue('sections', [...sections, newSection]);
+    form.setValue('sections', [...sections, newSection]);
     return newSection.id;
   }, [sections, form]);
 
@@ -158,13 +156,13 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
 
   // Save form
   const handleSave = () => {
-    const formData = form.getFieldValue('');
+    const formData = form.getValues();
     onSave?.(formData);
   };
 
   // Preview form
   const handlePreview = () => {
-    const formData = form.getFieldValue('');
+    const formData = form.getValues();
     onPreview?.(formData);
     setViewMode('preview');
   };
@@ -188,16 +186,19 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
         <div className="bg-white border-b border-gray-200 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <form.Field name="title">
-                {(field) => (
+              <Controller
+                name="title"
+                control={form.control}
+                render={({ field }) => (
                   <input
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
                     className="text-lg font-semibold bg-transparent border-none outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
                     placeholder="Form Title"
                   />
                 )}
-              </form.Field>
+              />
             </div>
 
             <div className="flex items-center space-x-2">
@@ -295,7 +296,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
 
             {viewMode === 'preview' && (
               <FormPreview 
-                schema={form.getFieldValue('')} 
+                schema={form.getValues()} 
                 showValidation={true}
                 interactive={true}
               />
@@ -306,7 +307,7 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
             )}
 
             {viewMode === 'code' && (
-              <FormCodeView schema={form.getFieldValue('')} />
+              <FormCodeView schema={form.getValues()} />
             )}
           </div>
 
@@ -364,19 +365,16 @@ interface FormBuilderCanvasProps {
   onFieldDuplicate: (fieldId: string) => void;
   onFieldReorder: (startIndex: number, endIndex: number) => void;
   onSectionAdd: (title: string) => string;
-  form: any; // TanStack form instance
+  form: UseFormReturn<FormSchema>;
 }
 
 const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
   fields,
-  sections,
   selectedField,
   onFieldSelect,
   onFieldUpdate,
   onFieldDelete,
   onFieldDuplicate,
-  onFieldReorder,
-  onSectionAdd,
   form,
 }) => {
   if (fields.length === 0) {
@@ -402,22 +400,25 @@ const FormBuilderCanvas: React.FC<FormBuilderCanvasProps> = ({
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <form.Field name="description">
-        {(field) => (
+      <Controller
+        name="description"
+        control={form.control}
+        render={({ field }) => (
           <div>
             <textarea
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
+              value={field.value || ''}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
               className="w-full p-3 border border-gray-300 rounded-md resize-none"
               placeholder="Form description (optional)"
               rows={2}
             />
           </div>
         )}
-      </form.Field>
+      />
 
       <div className="space-y-3">
-        {sortedFields.map((field, index) => (
+        {sortedFields.map((field) => (
           <div
             key={field.id}
             className={`
@@ -452,7 +453,7 @@ interface FieldRendererProps {
   onDuplicate: () => void;
 }
 
-const FieldRenderer: React.FC<FieldRendererProps> = ({ field, isSelected }) => {
+const FieldRenderer: React.FC<FieldRendererProps> = ({ field }) => {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">

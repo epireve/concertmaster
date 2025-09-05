@@ -1,5 +1,4 @@
 import React from 'react';
-import { FormSchema } from '../../types/forms';
 
 interface FormSettingsPanelProps {
   form: any; // TanStack form instance
