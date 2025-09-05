@@ -3,30 +3,33 @@ module.exports = {
   testEnvironment: 'jsdom',
   
   // Setup files
-  setupFilesAfterEnv: ['<rootDir>/tests/setup/setupTests.ts'],
+  setupFilesAfterEnv: ['<rootDir>/setup/setupTests.ts'],
   
   // Test file patterns
   testMatch: [
     '<rootDir>/tests/unit/**/*.test.{ts,tsx}',
-    '<rootDir>/tests/integration/**/*.test.{ts,tsx}'
+    '<rootDir>/tests/integration/**/*.test.{ts,tsx}',
+    '<rootDir>/tests/performance/**/*.test.{ts,tsx}',
+    '<rootDir>/tests/accessibility/**/*.test.{tsx}',
   ],
   
   // Module name mapping for CSS and static assets
-  moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/src/$1',
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/frontend/src/$1',
+    '^@tests/(.*)$': '<rootDir>/tests/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/tests/__mocks__/fileMock.js'
   },
   
   // Coverage configuration
   collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/index.tsx',
-    '!src/reportWebVitals.ts',
-    '!src/**/*.stories.{ts,tsx}',
-    '!src/**/__tests__/**',
-    '!src/**/*.test.{ts,tsx}'
+    'frontend/src/**/*.{ts,tsx}',
+    '!frontend/src/**/*.d.ts',
+    '!frontend/src/index.tsx',
+    '!frontend/src/vite-env.d.ts',
+    '!frontend/src/**/*.stories.{ts,tsx}',
+    '!frontend/src/**/__tests__/**',
+    '!frontend/src/**/*.test.{ts,tsx}'
   ],
   
   coverageThreshold: {
@@ -51,7 +54,7 @@ module.exports = {
     'json-summary'
   ],
   
-  coverageDirectory: '<rootDir>/tests/coverage',
+  coverageDirectory: '<rootDir>/tests/reports/coverage',
   
   // Transform configuration
   transform: {

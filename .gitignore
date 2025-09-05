@@ -30,3 +30,4 @@ memory
 backend/src/__pycache__/
 backend/src/**/__pycache__/
 **/__pycache__/
+tests/node_modules/

@@ -15,9 +15,9 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
-    ['html', { outputFolder: 'tests/e2e-results' }],
-    ['json', { outputFile: 'tests/e2e-results/results.json' }],
-    ['junit', { outputFile: 'tests/e2e-results/results.xml' }]
+    ['html', { outputFolder: 'tests/reports/playwright-html' }],
+    ['json', { outputFile: 'tests/reports/playwright-results.json' }],
+    ['junit', { outputFile: 'tests/reports/playwright-junit.xml' }]
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
@@ -99,5 +99,5 @@ export default defineConfig({
   },
 
   /* Output directory */
-  outputDir: 'tests/e2e-results/',
+  outputDir: 'tests/reports/playwright-test-results/',
 });

@@ -38,48 +38,5 @@
     "ts-jest": "^29.1.1",
     "identity-obj-proxy": "^3.0.0",
     "@playwright/test": "^1.40.0"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": ["<rootDir>/setup/setupTests.ts"],
-    "testMatch": [
-      "<rootDir>/unit/**/*.test.{ts,tsx}",
-      "<rootDir>/integration/**/*.test.{ts,tsx}",
-      "<rootDir>/performance/**/*.test.{ts,tsx}"
-    ],
-    "moduleNameMapping": {
-      "^@/(.*)$": "<rootDir>/../frontend/src/$1",
-      "\\.(css|less|scss|sass)$": "identity-obj-proxy",
-      "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/__mocks__/fileMock.js"
-    },
-    "collectCoverageFrom": [
-      "../frontend/src/**/*.{ts,tsx}",
-      "!../frontend/src/**/*.d.ts",
-      "!../frontend/src/index.tsx",
-      "!../frontend/src/**/*.stories.{ts,tsx}",
-      "!../frontend/src/**/__tests__/**",
-      "!../frontend/src/**/*.test.{ts,tsx}"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 85,
-        "functions": 90,
-        "lines": 90,
-        "statements": 90
-      }
-    },
-    "coverageReporters": [
-      "html",
-      "text",
-      "lcov",
-      "json-summary",
-      "cobertura"
-    ],
-    "coverageDirectory": "<rootDir>/coverage",
-    "testTimeout": 30000,
-    "verbose": true,
-    "clearMocks": true,
-    "restoreMocks": true
   }
 }
