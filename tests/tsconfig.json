@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "commonjs",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["jest", "@testing-library/jest-dom", "node"],
+
+    /* Path mapping */
+    "baseUrl": "../",
+    "paths": {
+      "@/*": ["frontend/src/*"],
+      "@components/*": ["frontend/src/components/*"],
+      "@types/*": ["frontend/src/types/*"],
+      "@store/*": ["frontend/src/store/*"],
+      "@hooks/*": ["frontend/src/hooks/*"],
+      "@utils/*": ["frontend/src/utils/*"],
+      "@tests/*": ["tests/*"],
+      "@backend/*": ["backend/src/*"]
+    }
+  },
+  "include": [
+    "../frontend/src/**/*",
+    "../backend/src/**/*",
+    "./**/*",
+    "./unit/**/*",
+    "./integration/**/*",
+    "./performance/**/*",
+    "./accessibility/**/*",
+    "./e2e/**/*",
+    "./setup/**/*",
+    "./fixtures/**/*",
+    "./utils/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "../**/node_modules",
+    "../**/dist",
+    "../**/build"
+  ]
+}
