@@ -23,6 +23,9 @@ import {
 import { reviewApi } from '../api/reviews';
 
 interface ReviewState {
+  // Router integration helpers
+  navigateToReview: (reviewId: string) => void;
+  navigateToList: () => void;
   // Data
   reviews: Review[];
   selectedReview: Review | null;
@@ -509,6 +512,17 @@ export const useReviewStore = create<ReviewState>()(
           get().fetchReviewHistory(review.id);
         },
         closeHistoryModal: () => set({ showHistoryModal: false, reviewHistory: [] }),
+        
+        // Router integration
+        navigateToReview: (reviewId: string) => {
+          // This will be injected by router context
+          console.log('Navigate to review:', reviewId);
+        },
+        
+        navigateToList: () => {
+          // This will be injected by router context  
+          console.log('Navigate to list');
+        },
       }),
       {
         name: 'review-store',

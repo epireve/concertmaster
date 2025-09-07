@@ -133,11 +133,22 @@ export const CommentEditor: React.FC<CommentEditorProps> = ({
   // Handle keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape' && onCancel) {
+      e.preventDefault();
       onCancel();
     }
     
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
       handleSubmit(e);
+    }
+  };
+  
+  // Announce mentions to screen readers
+  const announceMention = (mention: string) => {
+    const announcement = `${mention} mentioned`;
+    const announceEl = document.getElementById('mention-announcements');
+    if (announceEl) {
+      announceEl.textContent = announcement;
     }
   };
 
@@ -174,16 +185,27 @@ export const CommentEditor: React.FC<CommentEditorProps> = ({
   const isEmpty = !content.trim();
 
   return (
-    <form onSubmit={handleSubmit} className={`space-y-3 ${sizeClasses.container}`}>
+    <form onSubmit={handleSubmit} className={`space-y-3 ${sizeClasses.container}`} role="form" aria-label="Comment editor">
+      {/* Screen reader announcements */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only" id="mention-announcements"></div>
+      
       <div className="relative">
+        <label htmlFor={`comment-textarea-${Date.now()}`} className="sr-only">
+          {placeholder}
+        </label>
         {/* Textarea */}
         <textarea
+          id={`comment-textarea-${Date.now()}`}
           ref={textareaRef}
           value={content}
           onChange={handleContentChange}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={loading || isSubmitting}
+          aria-describedby="comment-help-text"
+          aria-expanded={showMentions}
+          aria-haspopup={showMentions ? 'listbox' : undefined}
+          aria-owns={showMentions ? 'mention-list' : undefined}
           className={`
             w-full resize-none border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
             disabled:opacity-50 disabled:cursor-not-allowed
@@ -194,36 +216,43 @@ export const CommentEditor: React.FC<CommentEditorProps> = ({
 
         {/* Mention Dropdown */}
         {showMentions && filteredUsers.length > 0 && (
-          <MentionSelector
-            users={filteredUsers}
-            onSelect={handleMentionSelect}
-            onClose={() => setShowMentions(false)}
-            query={mentionQuery}
-          />
+          <div role="region" aria-label="User mention suggestions">
+            <MentionSelector
+              users={filteredUsers}
+              onSelect={(mention) => {
+                handleMentionSelect(mention);
+                announceMention(mention.name);
+              }}
+              onClose={() => setShowMentions(false)}
+              query={mentionQuery}
+            />
+          </div>
         )}
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between" role="toolbar" aria-label="Comment formatting options">
         <div className="flex items-center space-x-2">
           {/* Formatting Buttons */}
           {allowFormatting && (
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1" role="group" aria-label="Text formatting">
               <Button
                 type="button"
                 variant="ghost"
                 size="xs"
                 className="text-gray-500 hover:text-gray-700"
+                aria-label="Make text bold"
               >
-                <Bold className="h-4 w-4" />
+                <Bold className="h-4 w-4" aria-hidden="true" />
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="xs"
                 className="text-gray-500 hover:text-gray-700"
+                aria-label="Make text italic"
               >
-                <Italic className="h-4 w-4" />
+                <Italic className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
           )}
@@ -252,8 +281,9 @@ export const CommentEditor: React.FC<CommentEditorProps> = ({
               }
             }}
             className="text-gray-500 hover:text-gray-700"
+            aria-label="Insert @ symbol to mention someone"
           >
-            <AtSign className="h-4 w-4" />
+            <AtSign className="h-4 w-4" aria-hidden="true" />
           </Button>
 
           {/* Attachment Button */}
@@ -263,14 +293,15 @@ export const CommentEditor: React.FC<CommentEditorProps> = ({
               variant="ghost"
               size="xs"
               className="text-gray-500 hover:text-gray-700"
+              aria-label="Attach file to comment"
             >
-              <Paperclip className="h-4 w-4" />
+              <Paperclip className="h-4 w-4" aria-hidden="true" />
             </Button>
           )}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2" role="group" aria-label="Comment actions">
           {showCancel && (
             <Button
               type="button"
@@ -279,6 +310,7 @@ export const CommentEditor: React.FC<CommentEditorProps> = ({
               onClick={onCancel}
               disabled={loading || isSubmitting}
               className={sizeClasses.button}
+              aria-label="Cancel comment editing"
             >
               Cancel
             </Button>
@@ -291,22 +323,28 @@ export const CommentEditor: React.FC<CommentEditorProps> = ({
             disabled={isEmpty || loading || isSubmitting}
             loading={isSubmitting}
             className={sizeClasses.button}
+            aria-label={isSubmitting ? 'Sending comment...' : 'Send comment'}
+            aria-describedby="comment-help-text"
           >
-            <Send className="h-4 w-4 mr-1" />
+            <Send className="h-4 w-4 mr-1" aria-hidden="true" />
             {isSubmitting ? 'Sending...' : 'Send'}
           </Button>
         </div>
       </div>
 
       {/* Helper Text */}
-      <div className="flex items-center justify-between text-xs text-gray-500">
+      <div id="comment-help-text" className="flex items-center justify-between text-xs text-gray-500" role="status" aria-live="polite">
         <div className="flex items-center space-x-2">
           <span>Use @ to mention someone</span>
           {mentions.length > 0 && (
-            <span>• {mentions.length} mention{mentions.length !== 1 ? 's' : ''}</span>
+            <span aria-label={`${mentions.length} user${mentions.length !== 1 ? 's' : ''} mentioned in this comment`}>
+              • {mentions.length} mention{mentions.length !== 1 ? 's' : ''}
+            </span>
           )}
         </div>
-        <span>⌘ + Enter to send</span>
+        <span aria-label="Keyboard shortcut: Command or Control plus Enter to send comment">
+          ⌘ + Enter to send
+        </span>
       </div>
     </form>
   );

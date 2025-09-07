@@ -79,6 +79,26 @@ export const ReviewFilters: React.FC<ReviewFiltersProps> = ({
   loading = false
 }) => {
   const [searchValue, setSearchValue] = useState(filters.search || '');
+  const [announceFilters, setAnnounceFilters] = useState('');
+  
+  // Announce filter changes to screen readers
+  React.useEffect(() => {
+    const activeFiltersCount = [
+      filters.search,
+      filters.status?.length,
+      filters.priority?.length,
+      filters.itemType,
+      filters.dueDate,
+      filters.assignedTo,
+      filters.tags?.length
+    ].filter(Boolean).length;
+    
+    if (activeFiltersCount > 0) {
+      setAnnounceFilters(`${activeFiltersCount} filter${activeFiltersCount !== 1 ? 's' : ''} applied`);
+    } else {
+      setAnnounceFilters('No filters applied');
+    }
+  }, [filters]);
 
   const handleSearchChange = (value: string) => {
     setSearchValue(value);
@@ -135,87 +155,109 @@ export const ReviewFilters: React.FC<ReviewFiltersProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" role="form" aria-label="Review filters">
+      {/* Screen reader announcement */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {announceFilters}
+      </div>
+      
       {/* Search */}
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-2">
-          <Search className="h-3 w-3 inline mr-1" />
+        <label htmlFor="search-input" className="block text-xs font-medium text-gray-700 mb-2">
+          <Search className="h-3 w-3 inline mr-1" aria-hidden="true" />
           Search
         </label>
         <input
+          id="search-input"
           type="text"
           value={searchValue}
           onChange={(e) => handleSearchChange(e.target.value)}
           placeholder="Search reviews..."
           disabled={loading}
+          aria-describedby="search-description"
           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
         />
+        <div id="search-description" className="sr-only">
+          Search through review titles, descriptions, and content
+        </div>
       </div>
 
       {/* Status Filter */}
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-2">
+      <fieldset>
+        <legend className="block text-xs font-medium text-gray-700 mb-2">
           Status
-        </label>
-        <div className="space-y-1">
+        </legend>
+        <div className="space-y-1" role="group" aria-labelledby="status-group-label">
+          <div id="status-group-label" className="sr-only">Select review statuses to filter by</div>
           {statusOptions.map((option) => (
             <label
               key={option.value}
-              className="flex items-center cursor-pointer hover:bg-gray-50 px-2 py-1 rounded"
+              className="flex items-center cursor-pointer hover:bg-gray-50 px-2 py-1 rounded focus-within:bg-gray-50"
             >
               <input
                 type="checkbox"
                 checked={filters.status?.includes(option.value) || false}
                 onChange={() => handleStatusToggle(option.value)}
                 disabled={loading}
+                aria-describedby={`status-${option.value}-description`}
                 className="h-3 w-3 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
               />
               <span className={`ml-2 text-xs flex items-center text-${option.color}-700`}>
-                <span className={`inline-block w-2 h-2 rounded-full bg-${option.color}-400 mr-2`}></span>
+                <span className={`inline-block w-2 h-2 rounded-full bg-${option.color}-400 mr-2`} aria-hidden="true"></span>
                 {option.label}
               </span>
+              <div id={`status-${option.value}-description`} className="sr-only">
+                Filter by {option.label.toLowerCase()} reviews
+              </div>
             </label>
           ))}
         </div>
-      </div>
+      </fieldset>
 
       {/* Priority Filter */}
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-2">
+      <fieldset>
+        <legend className="block text-xs font-medium text-gray-700 mb-2">
           Priority
-        </label>
-        <div className="space-y-1">
+        </legend>
+        <div className="space-y-1" role="group" aria-labelledby="priority-group-label">
+          <div id="priority-group-label" className="sr-only">Select priority levels to filter by</div>
           {priorityOptions.map((option) => (
             <label
               key={option.value}
-              className="flex items-center cursor-pointer hover:bg-gray-50 px-2 py-1 rounded"
+              className="flex items-center cursor-pointer hover:bg-gray-50 px-2 py-1 rounded focus-within:bg-gray-50"
             >
               <input
                 type="checkbox"
                 checked={filters.priority?.includes(option.value) || false}
                 onChange={() => handlePriorityToggle(option.value)}
                 disabled={loading}
+                aria-describedby={`priority-${option.value}-description`}
                 className="h-3 w-3 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
               />
               <span className={`ml-2 text-xs flex items-center text-${option.color}-700`}>
-                <span className={`inline-block w-2 h-2 rounded-full bg-${option.color}-400 mr-2`}></span>
+                <span className={`inline-block w-2 h-2 rounded-full bg-${option.color}-400 mr-2`} aria-hidden="true"></span>
                 {option.label}
               </span>
+              <div id={`priority-${option.value}-description`} className="sr-only">
+                Filter by {option.label.toLowerCase()} priority reviews
+              </div>
             </label>
           ))}
         </div>
-      </div>
+      </fieldset>
 
       {/* Item Type Filter */}
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-2">
-          <Tag className="h-3 w-3 inline mr-1" />
+        <label htmlFor="item-type-select" className="block text-xs font-medium text-gray-700 mb-2">
+          <Tag className="h-3 w-3 inline mr-1" aria-hidden="true" />
           Item Type
         </label>
         <select
+          id="item-type-select"
           value={filters.itemType || ''}
           onChange={(e) => handleItemTypeChange(e.target.value || undefined)}
           disabled={loading}
+          aria-describedby="item-type-description"
           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
         >
           <option value="">All Types</option>
@@ -225,33 +267,43 @@ export const ReviewFilters: React.FC<ReviewFiltersProps> = ({
             </option>
           ))}
         </select>
+        <div id="item-type-description" className="sr-only">
+          Filter reviews by the type of item being reviewed
+        </div>
       </div>
 
       {/* Due Date Filter */}
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-2">
-          <Calendar className="h-3 w-3 inline mr-1" />
+      <fieldset>
+        <legend className="block text-xs font-medium text-gray-700 mb-2">
+          <Calendar className="h-3 w-3 inline mr-1" aria-hidden="true" />
           Due Date
-        </label>
+        </legend>
         
         {/* Preset Options */}
-        <div className="space-y-1 mb-3">
+        <div className="space-y-1 mb-3" role="group" aria-labelledby="date-presets-label">
+          <div id="date-presets-label" className="sr-only">Quick date range options</div>
           {dueDatePresets.map((preset) => (
             <button
               key={preset.label}
               type="button"
               onClick={() => handleDueDatePreset(preset)}
               disabled={loading}
-              className="w-full text-left px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 rounded disabled:opacity-50"
+              aria-describedby={`preset-${preset.label.replace(/\s+/g, '-').toLowerCase()}-description`}
+              className="w-full text-left px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded disabled:opacity-50"
             >
               {preset.label}
+              <div id={`preset-${preset.label.replace(/\s+/g, '-').toLowerCase()}-description`} className="sr-only">
+                Filter reviews due {preset.label.toLowerCase()}
+              </div>
             </button>
           ))}
         </div>
 
         {/* Custom Date Range */}
         <div className="space-y-2">
+          <label htmlFor="start-date" className="block text-xs font-medium text-gray-600">From date</label>
           <input
+            id="start-date"
             type="date"
             value={filters.dueDate?.start ? filters.dueDate.start.toISOString().split('T')[0] : ''}
             onChange={(e) => {
@@ -261,9 +313,14 @@ export const ReviewFilters: React.FC<ReviewFiltersProps> = ({
               );
             }}
             disabled={loading}
+            aria-describedby="start-date-description"
             className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
           />
+          <div id="start-date-description" className="sr-only">Select the start date for the due date range filter</div>
+          
+          <label htmlFor="end-date" className="block text-xs font-medium text-gray-600">To date</label>
           <input
+            id="end-date"
             type="date"
             value={filters.dueDate?.end ? filters.dueDate.end.toISOString().split('T')[0] : ''}
             onChange={(e) => {
@@ -273,8 +330,10 @@ export const ReviewFilters: React.FC<ReviewFiltersProps> = ({
               );
             }}
             disabled={loading}
+            aria-describedby="end-date-description"
             className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
           />
+          <div id="end-date-description" className="sr-only">Select the end date for the due date range filter</div>
         </div>
 
         {filters.dueDate && (
@@ -282,35 +341,42 @@ export const ReviewFilters: React.FC<ReviewFiltersProps> = ({
             type="button"
             onClick={() => handleCustomDateRange(undefined)}
             disabled={loading}
-            className="w-full mt-2 text-xs text-gray-500 hover:text-gray-700 disabled:opacity-50"
+            aria-label="Clear due date filter"
+            className="w-full mt-2 text-xs text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:text-gray-700 disabled:opacity-50"
           >
             Clear Date Filter
           </button>
         )}
-      </div>
+      </fieldset>
 
       {/* Assignee Filter */}
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-2">
-          <User className="h-3 w-3 inline mr-1" />
+        <label htmlFor="assignee-input" className="block text-xs font-medium text-gray-700 mb-2">
+          <User className="h-3 w-3 inline mr-1" aria-hidden="true" />
           Assigned To
         </label>
         <input
+          id="assignee-input"
           type="text"
           value={filters.assignedTo || ''}
           onChange={(e) => onFiltersChange({ assignedTo: e.target.value || undefined })}
           placeholder="Enter user ID or email..."
           disabled={loading}
+          aria-describedby="assignee-description"
           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
         />
+        <div id="assignee-description" className="sr-only">
+          Filter reviews by the assigned user ID or email address
+        </div>
       </div>
 
       {/* Tags Filter */}
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-2">
+        <label htmlFor="tags-input" className="block text-xs font-medium text-gray-700 mb-2">
           Tags
         </label>
         <input
+          id="tags-input"
           type="text"
           value={filters.tags?.join(', ') || ''}
           onChange={(e) => {
@@ -322,8 +388,12 @@ export const ReviewFilters: React.FC<ReviewFiltersProps> = ({
           }}
           placeholder="Enter comma-separated tags..."
           disabled={loading}
+          aria-describedby="tags-description"
           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
         />
+        <div id="tags-description" className="sr-only">
+          Filter reviews by tags. Enter multiple tags separated by commas
+        </div>
       </div>
     </div>
   );

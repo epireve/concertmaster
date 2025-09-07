@@ -5,7 +5,7 @@ import { ReviewList } from './ReviewList';
 import { ReviewSummaryCards } from './ReviewSummaryCards';
 import { QuickActions } from './QuickActions';
 import { Button } from '../../shared';
-import { Plus, Filter, Download, Refresh } from 'lucide-react';
+import { Plus, Filter, Download, RefreshCw } from 'lucide-react';
 import type { ReviewFilters as ReviewFiltersType } from '../../../types/reviews';
 
 interface ReviewDashboardProps {
@@ -94,28 +94,40 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Skip to main content link */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded z-50"
+      >
+        Skip to main content
+      </a>
+      
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white shadow-sm border-b border-gray-200" role="banner">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 id="page-title" className="text-2xl font-bold text-gray-900">
                   Review Dashboard
                 </h1>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 mt-1" id="page-description">
                   Manage and track review processes across your organization
                 </p>
               </div>
               
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3" role="toolbar" aria-label="Dashboard actions">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
                   className={showFilters ? 'bg-blue-50 text-blue-700' : ''}
+                  aria-pressed={showFilters}
+                  aria-expanded={showFilters}
+                  aria-controls="filters-panel"
+                  aria-label={showFilters ? 'Hide filters panel' : 'Show filters panel'}
                 >
-                  <Filter className="h-4 w-4 mr-2" />
+                  <Filter className="h-4 w-4 mr-2" aria-hidden="true" />
                   Filters
                 </Button>
                 
@@ -124,8 +136,9 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
                   size="sm"
                   onClick={handleRefresh}
                   disabled={isRefreshing}
+                  aria-label={isRefreshing ? 'Refreshing reviews...' : 'Refresh review list'}
                 >
-                  <Refresh className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
                   Refresh
                 </Button>
                 
@@ -133,8 +146,9 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={handleExport}
+                  aria-label="Export reviews to CSV file"
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" aria-hidden="true" />
                   Export
                 </Button>
                 
@@ -142,41 +156,50 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
                   variant="primary"
                   size="sm"
                   onClick={onCreateReview}
+                  aria-label="Create a new review"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
                   New Review
                 </Button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Summary Cards */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" aria-labelledby="summary-heading">
+        <h2 id="summary-heading" className="sr-only">Review Statistics Summary</h2>
         <ReviewSummaryCards analytics={analytics} loading={loading.reviews} />
-      </div>
+      </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
-          <div className="lg:col-span-1">
+          <aside className="lg:col-span-1" role="complementary" aria-labelledby="sidebar-heading">
+            <h2 id="sidebar-heading" className="sr-only">Dashboard Sidebar</h2>
             <div className="space-y-6">
               {/* Quick Actions */}
               <QuickActions onCreateReview={onCreateReview} />
               
               {/* Filters */}
               {showFilters && (
-                <div className="bg-white rounded-lg border border-gray-200">
+                <div 
+                  id="filters-panel" 
+                  className="bg-white rounded-lg border border-gray-200"
+                  role="region"
+                  aria-labelledby="filters-heading"
+                >
                   <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-gray-900">
+                      <h3 id="filters-heading" className="text-sm font-medium text-gray-900">
                         Filters
                       </h3>
                       <Button
                         variant="ghost"
                         size="xs"
                         onClick={resetFilters}
+                        aria-label="Clear all applied filters"
                       >
                         Clear All
                       </Button>
@@ -192,19 +215,19 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
                 </div>
               )}
             </div>
-          </div>
+          </aside>
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg border border-gray-200">
+            <section className="bg-white rounded-lg border border-gray-200" role="main" aria-labelledby="reviews-heading">
               {/* List Header */}
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-medium text-gray-900">
+                    <h2 id="reviews-heading" className="text-lg font-medium text-gray-900">
                       Reviews
                     </h2>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500 mt-1" role="status" aria-live="polite">
                       {pagination.total} total reviews
                     </p>
                   </div>
@@ -214,11 +237,11 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
                     filters.status?.length || 
                     filters.priority?.length ||
                     filters.assignedTo) && (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2" role="status" aria-live="polite">
                       <span className="text-xs text-gray-500">
                         Active filters:
                       </span>
-                      <div className="flex items-center space-x-1">
+                      <div className="flex items-center space-x-1" aria-label="Applied filters">
                         {filters.search && (
                           <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
                             Search: {filters.search}
@@ -257,9 +280,16 @@ export const ReviewDashboard: React.FC<ReviewDashboardProps> = ({
                 onViewReview={onViewReview}
               />
             </div>
+          </section>
           </div>
         </div>
-      </div>
+      </main>
+      
+      {/* Live region for announcements */}
+      <div aria-live="assertive" aria-atomic="true" className="sr-only" id="announcements"></div>
+      
+      {/* Status messages */}
+      <div aria-live="polite" aria-atomic="false" className="sr-only" id="status-messages"></div>
     </div>
   );
 };

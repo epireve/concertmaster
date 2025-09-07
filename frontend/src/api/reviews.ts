@@ -18,7 +18,7 @@ import {
 } from '../types/reviews';
 
 // Base API configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000';
 const REVIEWS_ENDPOINT = `${API_BASE_URL}/api/v1/reviews`;
 
 // Request helper with authentication and error handling

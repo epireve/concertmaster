@@ -16,7 +16,7 @@ import {
   Layers,
   SlidersHorizontal,
   Zap,
-  Grid3X3,
+  Grid3x3,  // Fixed name
   BarChart3,
   Shield,
   Eye,
@@ -43,7 +43,6 @@ type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
 export const ArrowUp: IconComponent = ChevronUp;
 export const ArrowDown: IconComponent = ChevronDown;
 export const Move3D: IconComponent = Move;
-export const Move: IconComponent = Move;
 export const Monitor: IconComponent = Laptop;
 export const Tablet: IconComponent = TabletSmartphone;
 export { Smartphone };
@@ -58,18 +57,18 @@ export { Layers };
 export const Filter: IconComponent = Search;
 export { Zap };
 
-export const LayoutGrid: IconComponent = Grid3X3;
+export const LayoutGrid: IconComponent = Grid3x3;
 export { BarChart3 };
 export { Shield };
 export const Accessibility: IconComponent = Eye;
 
 export { ChevronRight };
 export { MoreVertical };
-export const Grid: IconComponent = Grid3X3;
+export const Grid: IconComponent = Grid3x3;
 export { SlidersHorizontal };
 
 // Additional missing exports
-export const Layout: IconComponent = Grid3X3;
+export const Layout: IconComponent = Grid3x3;
 export const GripVertical: IconComponent = MoreVertical;
 export const Undo2: IconComponent = RotateCcw;
 export const Redo2: IconComponent = Repeat;

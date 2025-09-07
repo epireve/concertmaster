@@ -760,3 +760,50 @@ export type MockCommentData = Partial<ReviewComment> & {
   content: string;
   authorId: string;
 };
+
+// Additional types needed by API layer
+export interface Review extends ReviewableItem {}
+export interface ReviewListResponse extends PaginatedResponse<Review> {}
+export interface ReviewStats extends ReviewAnalytics {}
+export interface ReviewHistory {
+  id: string;
+  reviewableItemId: string;
+  action: string;
+  description: string;
+  performedBy: string;
+  performedAt: string;
+  metadata?: Record<string, any>;
+}
+
+export interface ReviewCriteria {
+  id: string;
+  name: string;
+  description?: string;
+  weight: number;
+  required: boolean;
+  options?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface AssignReviewRequest extends CreateAssignmentRequest {}
+export interface CreateCriteriaRequest {
+  name: string;
+  description?: string;
+  weight?: number;
+  required?: boolean;
+  options?: string[];
+  metadata?: Record<string, any>;
+}
+
+export interface ReviewSearchParams {
+  query?: string;
+  filters?: ReviewFilters;
+  sort?: {
+    field: SortableReviewFields;
+    order: SortOrder;
+  };
+  pagination?: {
+    limit: number;
+    offset: number;
+  };
+}
