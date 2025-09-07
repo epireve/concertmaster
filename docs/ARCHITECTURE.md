@@ -42,12 +42,15 @@ graph TB
 - **Technology**: React 18, TypeScript, Vite
 - **UI Framework**: Tailwind CSS
 - **Workflow Engine**: React Flow for visual workflow building
-- **State Management**: Zustand + React Query
+- **State Management**: Zustand with persistence + React Query
+- **Routing**: Hybrid approach - state-based for main views, React Router DOM for deep-linking
 - **Features**:
   - Drag-and-drop workflow builder
-  - Real-time execution monitoring
+  - Real-time execution monitoring with WebSocket integration
   - Form builder with dynamic validation
-  - Responsive design with dark/light themes
+  - Review System with comprehensive dashboard and details pages
+  - Responsive design with accessibility compliance (WCAG 2.1 AA)
+  - Error boundaries with navigation recovery
 
 #### 2. Backend (FastAPI + SQLAlchemy)
 - **Framework**: FastAPI with async/await support

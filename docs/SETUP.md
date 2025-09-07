@@ -137,6 +137,7 @@ cp .env.example .env.local
 
 # Configure API endpoints
 echo "VITE_API_BASE_URL=http://localhost:8000/api/v1" >> .env.local
+echo "VITE_WS_URL=ws://localhost:8000/ws" >> .env.local
 ```
 
 3. **Start development server**
@@ -149,6 +150,20 @@ npm run dev
 npm run build
 npm run preview  # Preview production build
 ```
+
+### Navigation and Routing
+
+The frontend uses a hybrid routing approach:
+
+- **Main Application Views**: State-based navigation between Form Builder, Workflow Designer, and Visual Builder
+- **Review System**: URL-based routing with React Router DOM (`/reviews`, `/reviews/:id`)
+- **Error Boundaries**: Comprehensive error handling with navigation recovery
+
+**Key Navigation Features:**
+- Persistent navigation state via Zustand stores
+- WebSocket integration for real-time updates in Review System
+- Accessibility-compliant navigation with ARIA patterns
+- Error boundary fallbacks with navigation options
 
 ## 🐳 Docker Configuration
 
