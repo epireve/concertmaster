@@ -19,7 +19,7 @@ interface Analytics {
 }
 
 interface ReviewSummaryCardsProps {
-  analytics: Analytics;
+  analytics: Analytics | null;
   loading?: boolean;
 }
 
@@ -159,6 +159,15 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
   analytics,
   loading = false
 }) => {
+  // Early return if analytics data is not available
+  if (!analytics && !loading) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">No analytics data available</p>
+      </div>
+    );
+  }
+
   const formatCompletionTime = (hours: number) => {
     if (hours < 1) {
       return `${Math.round(hours * 60)}m`;
@@ -170,6 +179,7 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
   };
 
   const getCompletionRate = () => {
+    if (!analytics) return 0;
     const total = analytics.totalReviews;
     const completed = total - analytics.pendingReviews;
     return total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -178,7 +188,7 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
   const cards: Omit<StatCardProps, 'loading'>[] = [
     {
       title: 'Total Reviews',
-      value: analytics.totalReviews.toLocaleString(),
+      value: analytics?.totalReviews?.toLocaleString() || '0',
       subtitle: `${getCompletionRate()}% completion rate`,
       icon: Clock,
       color: 'blue',
@@ -190,7 +200,7 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
     },
     {
       title: 'Pending Reviews',
-      value: analytics.pendingReviews.toLocaleString(),
+      value: analytics?.pendingReviews?.toLocaleString() || '0',
       subtitle: 'Awaiting action',
       icon: Calendar,
       color: 'yellow',
@@ -202,11 +212,11 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
     },
     {
       title: 'Overdue Reviews',
-      value: analytics.overdueReviews.toLocaleString(),
+      value: analytics?.overdueReviews?.toLocaleString() || '0',
       subtitle: 'Past due date',
       icon: AlertTriangle,
       color: 'red',
-      trend: analytics.overdueReviews > 0 ? {
+      trend: analytics && analytics.overdueReviews > 0 ? {
         value: 15,
         isPositive: false,
         label: 'from last week'
@@ -214,7 +224,7 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
     },
     {
       title: 'Completed Today',
-      value: analytics.completedToday.toLocaleString(),
+      value: analytics?.completedToday?.toLocaleString() || '0',
       subtitle: 'Reviews finished',
       icon: CheckCircle,
       color: 'green',
@@ -226,7 +236,7 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
     },
     {
       title: 'Avg Completion Time',
-      value: formatCompletionTime(analytics.averageCompletionTime),
+      value: analytics ? formatCompletionTime(analytics.averageCompletionTime) : '—',
       subtitle: 'Time to complete',
       icon: TrendingUp,
       color: 'purple',
@@ -238,8 +248,8 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
     },
     {
       title: 'Active Reviewers',
-      value: analytics.topReviewers.length.toLocaleString(),
-      subtitle: `Top: ${analytics.topReviewers[0]?.name || 'None'}`,
+      value: analytics?.topReviewers?.length?.toLocaleString() || '0',
+      subtitle: `Top: ${analytics?.topReviewers?.[0]?.name || 'None'}`,
       icon: Users,
       color: 'blue',
       trend: {
@@ -263,7 +273,7 @@ export const ReviewSummaryCards: React.FC<ReviewSummaryCardsProps> = ({
       </div>
 
       {/* Top Reviewers Section */}
-      {analytics.topReviewers.length > 0 && !loading && (
+      {analytics && analytics.topReviewers.length > 0 && !loading && (
         <div className="mt-8 bg-white overflow-hidden rounded-lg border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-medium text-gray-900">
