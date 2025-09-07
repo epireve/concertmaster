@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Plus, 
-  Template, 
+  FileText as Template, 
   Clock, 
   AlertTriangle, 
   CheckCircle, 
@@ -40,6 +40,12 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   color,
   count
 }) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
   const getColorClasses = (color: string) => {
     switch (color) {
       case 'blue':
@@ -60,10 +66,12 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   return (
     <button
       onClick={onClick}
-      className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-sm"
+      onKeyDown={handleKeyDown}
+      className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 hover:shadow-sm"
+      aria-describedby={`action-${label.replace(/\s+/g, '-').toLowerCase()}-description`}
     >
       <div className="flex items-start space-x-3">
-        <div className={`flex-shrink-0 p-2 rounded-md ${getColorClasses(color)}`}>
+        <div className={`flex-shrink-0 p-2 rounded-md ${getColorClasses(color)}`} aria-hidden="true">
           <Icon className="h-5 w-5" />
         </div>
         <div className="flex-1 min-w-0">
@@ -72,18 +80,24 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
               {label}
             </h4>
             {count !== undefined && (
-              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                color === 'red' 
-                  ? 'bg-red-100 text-red-800'
-                  : color === 'yellow'
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : 'bg-blue-100 text-blue-800'
-              }`}>
+              <span 
+                className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                  color === 'red' 
+                    ? 'bg-red-100 text-red-800'
+                    : color === 'yellow'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-blue-100 text-blue-800'
+                }`}
+                aria-label={`${count} ${label.toLowerCase()}`}
+              >
                 {count}
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-500 mt-1">
+          <p 
+            id={`action-${label.replace(/\s+/g, '-').toLowerCase()}-description`} 
+            className="text-xs text-gray-500 mt-1"
+          >
             {description}
           </p>
         </div>
@@ -180,13 +194,13 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   return (
     <div className="space-y-6">
       {/* Primary Actions */}
-      <div className="bg-white rounded-lg border border-gray-200">
+      <section className="bg-white rounded-lg border border-gray-200" aria-labelledby="primary-actions-heading">
         <div className="p-4 border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-900">
+          <h3 id="primary-actions-heading" className="text-sm font-medium text-gray-900">
             Quick Actions
           </h3>
         </div>
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-3" role="group" aria-labelledby="primary-actions-heading">
           {primaryActions.map((action, index) => (
             <QuickActionButton
               key={index}
@@ -194,16 +208,16 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             />
           ))}
         </div>
-      </div>
+      </section>
 
       {/* Status Overview */}
-      <div className="bg-white rounded-lg border border-gray-200">
+      <section className="bg-white rounded-lg border border-gray-200" aria-labelledby="status-overview-heading">
         <div className="p-4 border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-900">
+          <h3 id="status-overview-heading" className="text-sm font-medium text-gray-900">
             Review Status
           </h3>
         </div>
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-3" role="group" aria-labelledby="status-overview-heading">
           {statusActions.map((action, index) => (
             <QuickActionButton
               key={index}
@@ -211,16 +225,16 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             />
           ))}
         </div>
-      </div>
+      </section>
 
       {/* Management */}
-      <div className="bg-white rounded-lg border border-gray-200">
+      <section className="bg-white rounded-lg border border-gray-200" aria-labelledby="management-heading">
         <div className="p-4 border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-900">
+          <h3 id="management-heading" className="text-sm font-medium text-gray-900">
             Management
           </h3>
         </div>
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-3" role="group" aria-labelledby="management-heading">
           {managementActions.map((action, index) => (
             <QuickActionButton
               key={index}
@@ -228,58 +242,59 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
             />
           ))}
         </div>
-      </div>
+      </section>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-lg border border-gray-200">
+      <section className="bg-white rounded-lg border border-gray-200" aria-labelledby="recent-activity-heading">
         <div className="p-4 border-b border-gray-200">
-          <h3 className="text-sm font-medium text-gray-900">
+          <h3 id="recent-activity-heading" className="text-sm font-medium text-gray-900">
             Recent Activity
           </h3>
         </div>
         <div className="p-4">
-          <div className="space-y-3 text-xs text-gray-500">
-            <div className="flex items-start space-x-2">
-              <div className="flex-shrink-0 w-2 h-2 mt-1 bg-green-400 rounded-full"></div>
+          <ol className="space-y-3 text-xs text-gray-500" aria-label="Recent activity feed">
+            <li className="flex items-start space-x-2">
+              <div className="flex-shrink-0 w-2 h-2 mt-1 bg-green-400 rounded-full" aria-label="Completed" role="img"></div>
               <div className="flex-1">
                 <span className="text-gray-900">John Smith</span> completed review for Form #1234
-                <div className="text-gray-400">2 minutes ago</div>
+                <time className="block text-gray-400" dateTime="2025-01-06T02:47:00">2 minutes ago</time>
               </div>
-            </div>
-            <div className="flex items-start space-x-2">
-              <div className="flex-shrink-0 w-2 h-2 mt-1 bg-blue-400 rounded-full"></div>
+            </li>
+            <li className="flex items-start space-x-2">
+              <div className="flex-shrink-0 w-2 h-2 mt-1 bg-blue-400 rounded-full" aria-label="Assigned" role="img"></div>
               <div className="flex-1">
                 <span className="text-gray-900">Sarah Johnson</span> was assigned to Workflow Review #5678
-                <div className="text-gray-400">1 hour ago</div>
+                <time className="block text-gray-400" dateTime="2025-01-06T01:49:00">1 hour ago</time>
               </div>
-            </div>
-            <div className="flex items-start space-x-2">
-              <div className="flex-shrink-0 w-2 h-2 mt-1 bg-yellow-400 rounded-full"></div>
+            </li>
+            <li className="flex items-start space-x-2">
+              <div className="flex-shrink-0 w-2 h-2 mt-1 bg-yellow-400 rounded-full" aria-label="Created" role="img"></div>
               <div className="flex-1">
                 <span className="text-gray-900">New review</span> created for Template #9012
-                <div className="text-gray-400">3 hours ago</div>
+                <time className="block text-gray-400" dateTime="2025-01-05T23:49:00">3 hours ago</time>
               </div>
-            </div>
-            <div className="flex items-start space-x-2">
-              <div className="flex-shrink-0 w-2 h-2 mt-1 bg-red-400 rounded-full"></div>
+            </li>
+            <li className="flex items-start space-x-2">
+              <div className="flex-shrink-0 w-2 h-2 mt-1 bg-red-400 rounded-full" aria-label="Overdue" role="img"></div>
               <div className="flex-1">
                 <span className="text-gray-900">Review #3456</span> is now overdue
-                <div className="text-gray-400">5 hours ago</div>
+                <time className="block text-gray-400" dateTime="2025-01-05T21:49:00">5 hours ago</time>
               </div>
-            </div>
-          </div>
+            </li>
+          </ol>
           <div className="mt-4 pt-3 border-t border-gray-100">
             <Button
               variant="ghost"
               size="xs"
               className="w-full text-xs"
+              aria-label="View complete activity history"
             >
-              <FileText className="h-3 w-3 mr-1" />
+              <FileText className="h-3 w-3 mr-1" aria-hidden="true" />
               View All Activity
             </Button>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

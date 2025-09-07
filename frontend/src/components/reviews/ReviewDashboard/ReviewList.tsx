@@ -75,7 +75,11 @@ const StatusBadge: React.FC<{ status: ReviewStatus }> = ({ status }) => {
   };
 
   return (
-    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
+    <span 
+      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}
+      role="status"
+      aria-label={`Review status: ${getStatusLabel(status)}`}
+    >
       <StatusIcon status={status} />
       <span className="ml-1">{getStatusLabel(status)}</span>
     </span>
@@ -96,13 +100,17 @@ const PriorityBadge: React.FC<{ priority: Priority }> = ({ priority }) => {
 
   const getPriorityIcon = (priority: Priority) => {
     if (priority === 'urgent' || priority === 'critical') {
-      return <AlertTriangle className="h-3 w-3 mr-1" />;
+      return <AlertTriangle className="h-3 w-3 mr-1" aria-hidden="true" />;
     }
     return null;
   };
 
   return (
-    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getPriorityColor(priority)}`}>
+    <span 
+      className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getPriorityColor(priority)}`}
+      role="status"
+      aria-label={`Priority level: ${priority}${priority === 'urgent' || priority === 'critical' ? ' - Requires immediate attention' : ''}`}
+    >
       {getPriorityIcon(priority)}
       {priority.charAt(0).toUpperCase() + priority.slice(1)}
     </span>
@@ -114,6 +122,17 @@ const ReviewRow: React.FC<{
   onViewReview?: (reviewId: string) => void;
 }> = ({ review, onViewReview }) => {
   const isOverdue = review.dueDate && new Date(review.dueDate) < new Date();
+  
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onViewReview?.(review.id);
+    }
+  };
+  
+  const handleClick = () => {
+    onViewReview?.(review.id);
+  };
   
   const formatDate = (date: string | Date) => {
     const d = new Date(date);
@@ -139,8 +158,13 @@ const ReviewRow: React.FC<{
 
   return (
     <tr
-      className="hover:bg-gray-50 cursor-pointer transition-colors"
-      onClick={() => onViewReview?.(review.id)}
+      className="hover:bg-gray-50 cursor-pointer transition-colors focus-within:bg-gray-50"
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`View review: ${review.title}${isOverdue ? ' (Overdue)' : ''}`}
+      aria-describedby={`review-${review.id}-description`}
     >
       <td className="px-6 py-4">
         <div className="flex items-start space-x-3">
@@ -150,42 +174,42 @@ const ReviewRow: React.FC<{
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-gray-900 truncate">
+                <h3 className="text-sm font-medium text-gray-900 truncate" id={`review-${review.id}-title`}>
                   {review.title}
                 </h3>
-                <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                <p className="text-xs text-gray-500 mt-1 line-clamp-2" id={`review-${review.id}-description`}>
                   {review.description}
                 </p>
                 <div className="flex items-center space-x-2 mt-2">
                   <span className="text-xs text-gray-500">
                     {review.itemType.replace('_', ' ')}
                   </span>
-                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-300" aria-hidden="true">•</span>
                   <span className="text-xs text-gray-500">
                     ID: {review.itemId}
                   </span>
                 </div>
               </div>
               <div className="flex-shrink-0 ml-4">
-                <ChevronRight className="h-4 w-4 text-gray-400" />
+                <ChevronRight className="h-4 w-4 text-gray-400" aria-hidden="true" />
               </div>
             </div>
           </div>
         </div>
       </td>
       
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap" headers="status-header">
         <StatusBadge status={review.status} />
       </td>
       
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap" headers="priority-header">
         <PriorityBadge priority={review.priority} />
       </td>
       
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap" headers="assignee-header">
         {review.currentAssignment ? (
           <div className="flex items-center space-x-2">
-            <User className="h-3 w-3 text-gray-400" />
+            <User className="h-3 w-3 text-gray-400" aria-hidden="true" />
             <span className="text-sm text-gray-900">
               {review.currentAssignment.assignedUser?.name || review.currentAssignment.assignedTo}
             </span>
@@ -195,15 +219,15 @@ const ReviewRow: React.FC<{
         )}
       </td>
       
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-6 py-4 whitespace-nowrap" headers="due-date-header">
         {review.dueDate ? (
           <div className="flex items-center space-x-2">
-            <Calendar className="h-3 w-3 text-gray-400" />
+            <Calendar className="h-3 w-3 text-gray-400" aria-hidden="true" />
             <span className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-900'}`}>
               {formatDate(review.dueDate)}
             </span>
             {isOverdue && (
-              <AlertTriangle className="h-3 w-3 text-red-500" />
+              <AlertTriangle className="h-3 w-3 text-red-500" aria-label="Overdue" />
             )}
           </div>
         ) : (
@@ -211,8 +235,10 @@ const ReviewRow: React.FC<{
         )}
       </td>
       
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {getTimeAgo(review.createdAt)}
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500" headers="created-header">
+        <time dateTime={new Date(review.createdAt).toISOString()}>
+          {getTimeAgo(review.createdAt)}
+        </time>
       </td>
     </tr>
   );
@@ -224,6 +250,13 @@ const Pagination: React.FC<{
 }> = ({ pagination, onPageChange }) => {
   const currentPage = Math.floor(pagination.offset / pagination.limit) + 1;
   const totalPages = Math.ceil(pagination.total / pagination.limit);
+  
+  const handleKeyDown = (e: React.KeyboardEvent, page: number) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onPageChange(page);
+    }
+  };
   
   const getPageNumbers = () => {
     const pages = [];
@@ -247,7 +280,7 @@ const Pagination: React.FC<{
   if (totalPages <= 1) return null;
 
   return (
-    <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+    <nav className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6" aria-label="Reviews pagination">
       <div className="flex items-center justify-between">
         <div className="flex-1 flex justify-between sm:hidden">
           <Button
@@ -255,6 +288,7 @@ const Pagination: React.FC<{
             size="sm"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={!pagination.hasPrevious}
+            aria-label={`Go to previous page (page ${currentPage - 1})`}
           >
             Previous
           </Button>
@@ -263,6 +297,7 @@ const Pagination: React.FC<{
             size="sm"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={!pagination.hasNext}
+            aria-label={`Go to next page (page ${currentPage + 1})`}
           >
             Next
           </Button>
@@ -270,7 +305,7 @@ const Pagination: React.FC<{
         
         <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-gray-700" role="status" aria-live="polite">
               Showing{' '}
               <span className="font-medium">
                 {Math.min(pagination.offset + 1, pagination.total)}
@@ -286,13 +321,14 @@ const Pagination: React.FC<{
           </div>
           
           <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+            <div className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={!pagination.hasPrevious}
                 className="rounded-l-md"
+                aria-label={`Go to previous page (page ${currentPage - 1})`}
               >
                 Previous
               </Button>
@@ -304,6 +340,8 @@ const Pagination: React.FC<{
                   size="sm"
                   onClick={() => onPageChange(page)}
                   className="rounded-none"
+                  aria-label={page === currentPage ? `Current page, page ${page}` : `Go to page ${page}`}
+                  aria-current={page === currentPage ? 'page' : undefined}
                 >
                   {page}
                 </Button>
@@ -315,14 +353,15 @@ const Pagination: React.FC<{
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={!pagination.hasNext}
                 className="rounded-r-md"
+                aria-label={`Go to next page (page ${currentPage + 1})`}
               >
                 Next
               </Button>
-            </nav>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </nav>
   );
 };
 
@@ -336,9 +375,9 @@ export const ReviewList: React.FC<ReviewListProps> = ({
 }) => {
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64" role="status" aria-live="polite">
         <div className="flex items-center space-x-2">
-          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+          <Loader2 className="h-5 w-5 animate-spin text-gray-400" aria-hidden="true" />
           <span className="text-sm text-gray-500">Loading reviews...</span>
         </div>
       </div>
@@ -347,9 +386,9 @@ export const ReviewList: React.FC<ReviewListProps> = ({
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64" role="alert">
         <div className="text-center">
-          <XCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+          <XCircle className="h-8 w-8 text-red-400 mx-auto mb-2" aria-hidden="true" />
           <p className="text-sm text-gray-900 font-medium">Failed to load reviews</p>
           <p className="text-xs text-gray-500 mt-1">{error}</p>
         </div>
@@ -359,9 +398,9 @@ export const ReviewList: React.FC<ReviewListProps> = ({
 
   if (reviews.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64" role="status" aria-live="polite">
         <div className="text-center">
-          <Clock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+          <Clock className="h-8 w-8 text-gray-400 mx-auto mb-2" aria-hidden="true" />
           <p className="text-sm text-gray-900 font-medium">No reviews found</p>
           <p className="text-xs text-gray-500 mt-1">
             Try adjusting your filters or create a new review
@@ -374,25 +413,25 @@ export const ReviewList: React.FC<ReviewListProps> = ({
   return (
     <div className="overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-gray-200" role="table" aria-label="Reviews list">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th id="review-header" scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Review
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th id="status-header" scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th id="priority-header" scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Priority
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th id="assignee-header" scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Assignee
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th id="due-date-header" scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Due Date
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th id="created-header" scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Created
               </th>
             </tr>
